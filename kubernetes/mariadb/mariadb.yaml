@@ -71,6 +71,13 @@ spec:
           requests:
             storage: 100Gi
 ---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: mariadb-local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
 apiVersion: v1
 kind: Service
 metadata:
