@@ -1,0 +1,146 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: scylladb
+  namespace: scylladb
+  labels:
+    app: scylladb
+spec:
+  serviceName: scylladb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scylladb
+  template:
+    metadata:
+      labels:
+        app: scylladb
+    spec:
+      nodeSelector:
+        scylladb: "true"
+      containers:
+        - name: scylladb
+          image: scylladb/scylla:4.2.1
+          imagePullPolicy: IfNotPresent
+          args: ["--seeds", "scylladb-0.scylladb.scylladb.svc.cluster.local"]
+          ports:
+            - containerPort: 7000
+              name: intra-node
+            - containerPort: 7001
+              name: tls-intra-node
+            - containerPort: 7199
+              name: jmx
+            - containerPort: 9042
+              name: cql
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256M
+            requests:
+              cpu: 200m
+              memory: 256M
+          securityContext:
+            capabilities:
+              add:
+                - IPC_LOCK
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "PID=$(pidof scylladb) && kill $PID && while ps -p $PID > /dev/null; do sleep 1; done"]
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - exec
+                - /opt/ready-probe.sh
+            initialDelaySeconds: 15
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: scylladb-config
+              mountPath: "/etc/scylladb/scylladb.yaml"
+              subPath: scylladb.yaml
+              readOnly: true
+            - name: scylladb-config
+              mountPath: "/etc/scylladb/cassandra-rackdc.properties"
+              subPath: cassandra-rackdc.properties
+              readOnly: true
+            - name: scylladb-data
+              mountPath: /var/lib/scylla
+            - name: scylladb-ready-probe
+              mountPath: /opt/ready-probe.sh
+              subPath: ready-probe.sh
+      volumes:
+        - name: scylladb-ready-probe
+          configMap:
+            name: scylladb
+        - name: scylladb-config
+          configMap:
+            name: scylladb-config
+  volumeClaimTemplates:
+    - metadata:
+        name: scylladb-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: scylladb-local-storage
+        resources:
+          requests:
+            storage: 100Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scylladb
+  namespace: scylladb
+data:
+  ready-probe.sh: |
+    #!/bin/bash
+    if [[ $(nodetool status | grep $POD_IP) == *"UN"* ]]; then
+      if [[ $DEBUG ]]; then
+        echo "UN";
+      fi
+      exit 0;
+    else
+      if [[ $DEBUG ]]; then
+        echo "Not Up";
+      fi
+      exit 1;
+    fi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: scylladb
+  name: scylladb
+  namespace: scylladb
+spec:
+  clusterIP: None
+  ports:
+    - port: 9042
+  selector:
+    app: scylladb
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: scylladb
+  name: scylladb-local
+  namespace: scylladb
+spec:
+  type: NodePort
+  ports:
+    - port: 9042
+      targetPort: 9042
+      nodePort: 32042
+  selector:
+    app: scylladb

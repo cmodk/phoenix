@@ -1,0 +1,149 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mariadb
+  namespace: mariadb
+  labels:
+    app: mariadb
+spec:
+  serviceName: mariadb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+        - name: mariadb
+          image: mariadb:10.5
+          command:
+            - bash
+            - /start-mariadb-instance.sh
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3306
+              name: mysql
+            - containerPort: 4567
+              name: galera
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256M
+            requests:
+              cpu: 200m
+              memory: 256M
+          env:
+          - name: MYSQL_RANDOM_ROOT_PASSWORD
+            value: "yes"
+          securityContext:
+            capabilities:
+              add:
+                - IPC_LOCK
+          volumeMounts:
+            - name: mariadb-config
+              mountPath: "/etc/mysql/mariadb.conf.d/galera.cnf"
+              subPath: galera.cnf
+              readOnly: true
+            - name: mariadb-config
+              mountPath: "/start-mariadb-instance.sh"
+              subPath: start-mariadb-instance.sh
+              readOnly: true
+            - name: mariadb-config
+              mountPath: "/bootstrap_cluster.sh"
+              subPath: bootstrap_cluster.sh
+              readOnly: true
+            - name: mariadb-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mariadb-config
+          configMap:
+            name: mariadb-config
+  volumeClaimTemplates:
+    - metadata:
+        name: mariadb-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: mariadb-local-storage
+        resources:
+          requests:
+            storage: 100Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mariadb
+  name: mariadb
+  namespace: mariadb
+spec:
+  clusterIP: None
+  ports:
+    - port: 3306
+  selector:
+    app: mariadb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mariadb
+  name: mariadb-local
+  namespace: mariadb
+spec:
+  type: NodePort
+  ports:
+    - port: 3306
+      targetPort: 3306
+      nodePort: 32306
+  selector:
+    app: mariadb
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phpmyadmin
+  namespace: mariadb
+  labels:
+    app: phpmyadmin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phpmyadmin
+  template:
+    metadata:
+      labels:
+        app: phpmyadmin
+    spec:
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+      containers:
+      - name: phpmyadmin
+        image: phpmyadmin/phpmyadmin
+        ports:
+          - containerPort: 80
+        env:
+        - name: PMA_HOST
+          value: mariadb.mariadb.svc.cluster.local:3306
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: phpmyadmin-service
+  namespace: mariadb
+spec:
+  selector:
+    app: phpmyadmin
+  ports:
+  - name: phpmyadmin
+    protocol: TCP
+    port: 2020
+    targetPort: 80
+

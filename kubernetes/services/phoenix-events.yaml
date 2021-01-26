@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: phoenix-events
+ labels:
+   app: phoenix-events
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: phoenix-events
+  template:
+    metadata:
+      labels:
+        app: phoenix-events
+    spec:
+      containers:
+      - name: phoenix-events
+        image: eu.gcr.io/ae101-197818/sandbox/phoenix-events
+        env:
+        - name: PHOENIX_ENV
+          value: "sandbox"
+        volumeMounts:
+        - name: phoenix-config
+          mountPath: "/usr/local/share/phoenix/config"
+          readOnly: true
+      restartPolicy: Always
+      volumes:
+      - name: phoenix-config
+        secret:
+          secretName: phoenix-config
+      imagePullSecrets:
+      - name:  gcr-json-key
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phoenix-events-service
+spec:
+  selector:
+    app: phoenix-events
+  type: NodePort
+  ports:
+  - name: phoenix-events-service
+    protocol: TCP
+    port: 4010
+    targetPort: 4010

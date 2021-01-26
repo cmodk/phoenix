@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: phoenix-devices
+ labels:
+   app: phoenix-devices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phoenix-devices
+  template:
+    metadata:
+      labels:
+        app: phoenix-devices
+    spec:
+      containers:
+      - name: phoenix-devices
+        image: eu.gcr.io/ae101-197818/sandbox/phoenix-devices
+        env:
+        - name: PHOENIX_ENV
+          value: "sandbox"
+        volumeMounts:
+        - name: phoenix-config
+          mountPath: "/usr/local/share/phoenix/config"
+          readOnly: true
+        - name: phoenix-certificates
+          mountPath: "/usr/local/share/phoenix/certificates"
+          readOnly: true
+        ports:
+          - containerPort: 4000
+      restartPolicy: Always
+      volumes:
+      - name: phoenix-config
+        secret:
+          secretName: phoenix-config
+      - name: phoenix-certificates
+        secret:
+          secretName: phoenix-certificates
+      imagePullSecrets:
+      - name:  gcr-json-key
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: phoenix-devices-service
+spec:
+  selector:
+    app: phoenix-devices
+  type: NodePort
+  ports:
+  - name: phoenix-devices-service
+    protocol: TCP
+    port: 4010
+    targetPort: 4010
+    nodePort: 32080

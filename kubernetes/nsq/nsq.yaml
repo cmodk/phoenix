@@ -1,0 +1,195 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nsqlookupd
+  namespace: nsq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nsqlookupd
+  template:
+    metadata:
+      labels:
+        app: nsqlookupd
+    spec:
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+      containers:
+        - name: nsqlookupd
+          image: eu.gcr.io/ae101-197818/nsq
+          command:
+            - /nsqlookupd
+          ports:
+            - containerPort: 4160
+              name: tcp-port
+            - containerPort: 4161
+              name: http-port
+            
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nsqd
+  namespace: nsq
+spec:
+  serviceName: nsqd
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nsqd
+  template:
+    metadata:
+      labels:
+        app: nsqd
+    spec:
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+      containers:
+        - name: nsqd
+          image: eu.gcr.io/ae101-197818/nsq
+          command: 
+            - "/nsqd"
+            - "-http-address=0.0.0.0:32151"
+            - "-tcp-address=0.0.0.0:32150"
+            - "-lookupd-tcp-address=nsqlookupd:4160"
+            - "-broadcast-address=$(NODEIP)"
+            - "-broadcast-http-port=32151"
+            - "-broadcast-tcp-port=32150"
+            - "-data-path=/data/nsqd"
+          ports:
+            - containerPort: 4150
+              name: tcp-port
+            - containerPort: 4151
+              name: http-port
+          env:
+          - name: HOSTNAME
+            valueFrom: 
+              fieldRef:
+                fieldPath: metadata.name
+          - name: NODEIP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          volumeMounts:
+            - name: nsqd-data
+              mountPath: /data/nsqd
+  volumeClaimTemplates:
+    - metadata:
+        name: nsqd-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nsqd-local-storage
+        resources:
+          requests:
+            storage: 100Gi
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nsqadmin
+  namespace: nsq
+spec:
+  serviceName: nsqadmin
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nsqadmin
+  template:
+    metadata:
+      labels:
+        app: nsqadmin
+    spec:
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+      containers:
+        - name: nsqadmin
+          image: eu.gcr.io/ae101-197818/nsq
+          command: 
+            - "/nsqadmin"
+            - "-lookupd-http-address=nsqlookupd:4161"
+          ports:
+            - containerPort: 4171
+              name: http-port
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nsqlookupd
+  name: nsqlookupd
+  namespace: nsq
+spec:
+  clusterIP: None
+  ports:
+    - port: 4160
+      name: tcp-port
+    - port: 4161
+      name: http-port
+  selector:
+    app: nsqlookupd
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nsqd
+  name: nsqd
+  namespace: nsq
+spec:
+  type: NodePort
+  ports:
+    - port: 32150
+      targetPort: 32150
+      nodePort: 32150
+      name: tcp-port
+    - port: 32151
+      targetPort: 32151
+      nodePort: 32151
+      name: http-port
+  selector:
+    app: nsqd
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nsqadmin
+  name: nsqadmin
+  namespace: nsq
+spec:
+  clusterIP: None
+  ports:
+    - port: 4171
+      name: http-port
+  selector:
+    app: nsqadmin
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nsqlookupd
+  name: nsqlookupd-home
+  namespace: nsq
+spec:
+  type: NodePort
+  ports:
+    - port: 4160
+      targetPort: 4160
+      nodePort: 32160
+      name: tcp-port
+    - port: 4161
+      targetPort: 4161
+      nodePort: 32161
+      name: http-port
+  selector:
+    app: nsqlookupd
+
+

@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadbalancer
+  namespace: phoenix-sandbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loadbalancer
+  template:
+    metadata:
+      labels:
+        app: loadbalancer
+    spec:
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+      containers:
+      - name: loadbalancer
+        image: nginx:stable
+        ports:
+        - containerPort: 3080
+          name: lb-http
+        - containerPort: 3443
+          name: lb-https
+        volumeMounts:
+        - name: nginx-conf
+          readOnly: true
+          mountPath: /etc/nginx
+        - name: wildcard-ae101-net-tls
+          readOnly: true
+          mountPath: /cert/wildcard-ae101-net
+        - name: wildcard-phoenix-cloud-net-tls
+          readOnly: true
+          mountPath: /cert/wildcard-phoenix-cloud-net
+      volumes:
+      - name: wildcard-ae101-net-tls
+        secret:
+          secretName: wildcard-ae101-net-tls
+      - name: wildcard-phoenix-cloud-net-tls
+        secret:
+          secretName: wildcard-phoenix-cloud-net-tls
+      - name: nginx-conf
+        configMap:
+          name: nginx-conf
+          items:
+          - key: nginx.conf
+            path: nginx.conf 
+  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loadbalancer
+  namespace: phoenix-sandbox
+  labels:
+    app: loadbalancer
+spec:
+  selector:
+    app: loadbalancer
+  ports:
+  - port: 3080
+    targetPort: 3080
+    name: lb-http
+  - port: 3443
+    targetPort: 3443
+    name: lb-https
+  - port: 8883
+    targetPort: 8883
+    name: lb-mqtts
+  type: LoadBalancer
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-ae101-net-tls
+  namespace: phoenix-sandbox
+spec:
+  secretName: wildcard-ae101-net-tls
+  issuerRef:
+    name: ae101-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.ae101.net"
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-phoenix-cloud-net-tls
+  namespace: phoenix-sandbox
+spec:
+  secretName: wildcard-phoenix-cloud-net-tls
+  issuerRef:
+    name: ae101-issuer
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.phoenix-cloud.net"
+
