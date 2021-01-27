@@ -5,7 +5,7 @@ wsrep_on=ON
 wsrep_sst_method=rsync
 wsrep_provider=/usr/lib/galera/libgalera_smm.so
 wsrep_provider_options="gmcast.segment=2;evs.auto_evict=1"
-wsrep_cluster_name="aecloud"
+wsrep_cluster_name="phoenix"
 wsrep_cluster_address="gcomm://maria-0.maria.mariadb.svc.cluster.local"
 #wsrep_node_address="10.0.38.119"
 #wsrep_node_name="th"
