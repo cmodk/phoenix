@@ -1,0 +1,88 @@
+version: '3' 
+services: 
+  mariadb:
+    image: mariadb:10
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 123
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+      MYSQL_USER: "phoenix"
+      MYSQL_PASSWORD: "123"
+      MYSQL_DATABASE: "phoenix"
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5
+    links:
+    - mariadb
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+    ports:
+      - 2020:80
+  scylladb-1:
+   image: scylladb/scylla:4.2.1   
+   command: "--seeds scylladb-1"
+   ports:
+     - "9042:9042"
+  nsqlookupd:
+    image: nsqio/nsq
+    ports:
+      - "4160:4160"
+      - "4161:4161"
+    expose:
+      - "4160"
+      - "4161"
+    command: /nsqlookupd
+  nsqd-0:
+    image: nsqio/nsq
+    expose:
+      - "4150"
+      - "4151"
+    ports:
+      - "4150:4150"
+      - "4151:4151"
+    command: /nsqd --broadcast-address=nsqd-0 --lookupd-tcp-address=nsqlookupd:4160
+    links:
+      - nsqlookupd
+  nsqd-1:
+    image: nsqio/nsq
+    expose:
+      - "5150"
+      - "5151"
+    ports:
+      - "5150:5150"
+      - "5151:5151"
+    command: /nsqd --broadcast-address=nsqd-1 --lookupd-tcp-address=nsqlookupd:4160 --http-address=0.0.0.0:5151 --tcp-address=0.0.0.0:5150
+    links:
+      - nsqlookupd
+  nsqd-2:
+    image: nsqio/nsq
+    expose:
+      - "6150"
+      - "6151"
+    ports:
+      - "6150:6150"
+      - "6151:6151"
+    command: /nsqd --broadcast-address=nsqd-2 --lookupd-tcp-address=nsqlookupd:4160 --http-address=0.0.0.0:6151 --tcp-address=0.0.0.0:6150
+    links:
+      - nsqlookupd
+  nsqadmin:
+    image: nsqio/nsq
+    ports:
+      - "4171:4171"
+    command: /nsqadmin -lookupd-http-address=nsqlookupd:4161
+    links:
+      - nsqlookupd
+      - "nsqd-0"
+      - "nsqd-1"
+      - "nsqd-2"
+  grafana:
+    image: grafana/grafana
+    user: "1000"
+    ports:
+      - "3001:3001"
+    volumes:
+      - "./grafana/grafana.ini:/etc/grafana/grafana.ini"
+      - "./grafana:/var/lib/grafana"
+
+
