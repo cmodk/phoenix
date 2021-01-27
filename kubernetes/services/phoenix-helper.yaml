@@ -19,7 +19,7 @@ spec:
         image: eu.gcr.io/ae101-197818/sandbox/phoenix-helper
         env:
         - name: PHOENIX_ENV
-          value: "sandbox"
+          value: "k8s"
         volumeMounts:
         - name: phoenix-config
           mountPath: "/usr/local/share/phoenix/config"
