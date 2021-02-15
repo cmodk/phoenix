@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: phoenix-samples
+ labels:
+   app: phoenix-samples
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phoenix-samples
+  template:
+    metadata:
+      labels:
+        app: phoenix-samples
+    spec:
+      containers:
+      - name: phoenix-samples
+        image: eu.gcr.io/ae101-197818/sandbox/phoenix-samples
+        env:
+        - name: PHOENIX_ENV
+          value: "k8s"
+        volumeMounts:
+        - name: phoenix-config
+          mountPath: "/usr/local/share/phoenix/config"
+          readOnly: true
+      restartPolicy: Always
+      volumes:
+      - name: phoenix-config
+        secret:
+          secretName: phoenix-config
+      imagePullSecrets:
+      - name:  gcr-json-key
+
