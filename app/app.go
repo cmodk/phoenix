@@ -1,0 +1,466 @@
+package app
+
+import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/json"
+	"encoding/pem"
+	"flag"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"reflect"
+	"time"
+
+	"github.com/Masterminds/squirrel"
+	"github.com/go-redis/redis"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/gocql/gocql"
+	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
+	"github.com/nsqio/go-nsq"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/negroni"
+
+	"gopkg.in/yaml.v2"
+)
+
+var (
+	app_certificate_generate    = flag.Bool("certificate-generate", false, "Generate private and public key for server, (And CA if not found)")
+	app_certificate_path        = flag.String("certificate-path", "./certificates", "Search path for certificates")
+	app_certificate_common_name = flag.String("common-name", "localhost", "DNS name for certificates")
+
+	http_address = flag.String("http-address", "0.0.0.0", "Listening address for http connections")
+	http_port    = flag.Int("http-port", 4010, "Listening post for http connections")
+)
+
+func CheckFlags() {
+
+	if *app_certificate_generate {
+		if err := generateCertificates(); err != nil {
+			panic(err)
+		}
+		os.Exit(0)
+	}
+}
+
+type App struct {
+	Environment string
+	Config      *Config
+	ListenAddr  string
+	ListenPort  int
+	Router      *mux.Router
+	Http        *http.Server
+	Negroni     *negroni.Negroni
+	Logger      *logrus.Logger
+	Database    *Database
+	NsqProducer *nsq.Producer
+	Cassandra   *gocql.Session
+	Redis       *redis.Client
+
+	Command *CommandBus
+	Event   *EventBus
+
+	EnableHttp bool
+
+	CertificatePath string
+	CACertificate   *x509.Certificate
+	CAPrivateKey    *rsa.PrivateKey
+}
+
+type Database struct {
+	*sqlx.DB
+	Logger *logrus.Logger
+}
+
+type Criteria interface{}
+
+func (db *Database) ParseCriteria(sb *squirrel.SelectBuilder, c Criteria) {
+	c_value := reflect.ValueOf(c)
+	typeOfT := c_value.Type()
+	for i := 0; i < c_value.NumField(); i++ {
+		f := c_value.Field(i)
+		ft := typeOfT.Field(i)
+		if !f.IsZero() && f.Kind() != reflect.Struct && f.Kind() != reflect.Slice {
+
+			switch ft.Name {
+			case "Limit":
+				*sb = sb.Limit(uint64(f.Interface().(int)))
+			default:
+				db.Logger.Debugf("%d: %s %s = %v -> %s\n", i,
+					ft.Name, f.Type(), f.Interface(), ft.Tag.Get("schema"))
+				*sb = sb.Where(squirrel.Eq{ft.Tag.Get("schema"): f.Interface()})
+			}
+
+		}
+
+		//Check if custom parsing is implemented
+		v, ok := (f.Interface()).(interface {
+			ParseCriteria(sb *squirrel.SelectBuilder) error
+		})
+		if ok {
+			if err := v.ParseCriteria(sb); err != nil {
+				panic(err)
+			}
+
+		}
+	}
+}
+
+func (db *Database) Match(dst interface{}, table string, criteria Criteria) error {
+	sb := squirrel.Select("*").From(table)
+	db.ParseCriteria(&sb, criteria)
+
+	query, args, err := sb.ToSql()
+	if err != nil {
+		return err
+	}
+
+	db.Logger.WithField("sql", "matchone").Printf("Executing %s\n", query)
+
+	return db.Select(dst, query, args...)
+
+}
+
+func (db *Database) MatchOne(dst interface{}, table string, criteria Criteria) error {
+	sb := squirrel.Select("*").From(table)
+	db.ParseCriteria(&sb, criteria)
+
+	query, args, err := sb.ToSql()
+	if err != nil {
+		return err
+	}
+
+	db.Logger.WithField("sql", "matchone").Printf("Executing %s\n", query)
+
+	return db.Get(dst, query, args...)
+
+}
+
+func (db *Database) Insert(entity interface{}, table string) error {
+	/*f, ok := reflect.TypeOf(entity).FieldByName("Id")
+	if !ok {
+		return fmt.Errorf("Entity has no Id: %s\n", getEventId(entity))
+	}
+
+	table := f.Tag.Get("table")
+	if table == "" {
+		return fmt.Errorf("Missing table tag for entity: %s\n", getEventId(entity))
+	}*/
+
+	ignored_fields := map[string]bool{}
+	log.Printf("Inserting to table: %s\n", table)
+	query, args, err := squirrel.Insert(table).SetMap(structToQueryMap(entity, ignored_fields)).ToSql()
+	if err != nil {
+		return err
+	}
+	db.Logger.WithField("sql", "insert").Printf("Executing %s with args %v\n", query, args)
+
+	_, err = db.Exec(query, args...)
+
+	return err
+}
+
+func (db *Database) Update(entity interface{}) (int64, error) {
+	f, ok := reflect.TypeOf(entity).FieldByName("Id")
+	if !ok {
+		return 0, fmt.Errorf("Entity has no Id: %s\n", getEventId(entity))
+	}
+
+	table := f.Tag.Get("table")
+	if table == "" {
+		return 0, fmt.Errorf("Missing table tag for entity: %s\n", getEventId(entity))
+	}
+
+	//Get Id
+	id := reflect.ValueOf(entity).FieldByName("Id").Uint()
+
+	ignored_fields := map[string]bool{
+		"Id": true,
+	}
+
+	query, args, err := squirrel.Update(table).
+		Where(squirrel.Eq{"id": id}).
+		SetMap(structToQueryMap(entity, ignored_fields)).ToSql()
+	if err != nil {
+		return 0, err
+	}
+	db.Logger.WithField("sql", "insert").Printf("Executing %s with args %v\n", query, args)
+
+	result, err := db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected()
+
+}
+
+func structToQueryMap(s interface{}, ignore map[string]bool) map[string]interface{} {
+	m := make(map[string]interface{})
+	t := reflect.TypeOf(s)
+	v := reflect.ValueOf(s)
+
+	for i := 0; i < t.NumField(); i++ {
+		tf := t.Field(i)
+		tag := tf.Tag.Get("db")
+		if len(tag) == 0 {
+			continue
+		}
+
+		_, ignore := ignore[tf.Name]
+		if ignore {
+			continue
+		}
+
+		vf := v.FieldByName(tf.Name)
+
+		if vf.Kind() == reflect.Interface {
+			//Json encode structs
+			data, err := json.Marshal(vf.Interface())
+			if err != nil {
+				panic(err)
+			}
+
+			m[tag] = data
+		} else {
+			m[tag] = vf.Interface()
+		}
+	}
+
+	return m
+}
+
+type Config struct {
+	LogLevel   string           `yaml:"LogLevel"`
+	MariaDb    *string          `yaml:"MariaDB"`
+	NsqTopic   *string          `yaml:"NsqTopic"`
+	NsqLookupd *string          `yaml:"NsqLookupd"`
+	Nsqd       *string          `yaml:"Nsqd"`
+	Redis      *string          `yaml:"Redis"`
+	Cassandra  *CassandraConfig `yaml:"Cassandra"`
+	EventBus   *EventBusConfig  `yaml:"EventBus"`
+}
+
+func New() *App {
+	env := os.Getenv("PHOENIX_ENV")
+	if env == "" {
+		env = "dev"
+	}
+
+	log.Printf("Running in environment: %s\n", env)
+
+	config, err := LoadConfig(env)
+	if err != nil {
+		panic(err)
+	}
+
+	CheckFlags()
+
+	app := &App{
+		Environment:     env,
+		Config:          config,
+		ListenAddr:      *http_address,
+		ListenPort:      *http_port,
+		Router:          mux.NewRouter(),
+		Logger:          logrus.New(),
+		EnableHttp:      false,
+		CertificatePath: *app_certificate_path,
+	}
+
+	app.Logger.Level, err = logrus.ParseLevel(config.LogLevel)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Printf("Using log level %s\n", app.Logger.Level.String())
+
+	app.Command = NewCommandBus(app)
+	app.Event = NewEventBus(app)
+
+	if config.Nsqd != nil {
+		nsq_config := nsq.NewConfig()
+		app.NsqProducer, err = nsq.NewProducer(*config.Nsqd, nsq_config)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if config.Cassandra != nil {
+		app.Cassandra, err = ConnectCassandra(*config.Cassandra)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if config.Redis != nil {
+		app.Redis, err = ConnectRedis(*config.Redis)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	app.Negroni = negroni.New()
+
+	app.Http = &http.Server{
+		Handler:      app.Negroni,
+		Addr:         fmt.Sprintf("%s:%d", app.ListenAddr, app.ListenPort),
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
+
+	return app
+}
+
+func LoadConfig(env string) (*Config, error) {
+	config_file, err := os.Open(fmt.Sprintf("config/%s.yaml", env))
+	if err != nil {
+		return nil, err
+	}
+
+	var config Config
+
+	if err := yaml.NewDecoder(config_file).Decode(&config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+
+}
+
+func (app *App) Run() {
+
+	app.Negroni.UseHandler(app.Router)
+
+	go app.Command.Listen()
+	log.Printf("Running application\n")
+
+	if app.EnableHttp {
+		app.Logger.Info("Listening for http connections")
+		log.Fatal(app.Http.ListenAndServe())
+	} else {
+		for {
+			time.Sleep(time.Second * 60)
+		}
+	}
+
+}
+
+func (app *App) LoadCertificates(load_private_key bool) error {
+	log.Printf("Loading certificates\n")
+	caPublicKeyFile, err := ioutil.ReadFile(app.CertificatePath + "/server.pem")
+	if err != nil {
+		return err
+	}
+	pemBlock, _ := pem.Decode(caPublicKeyFile)
+	if pemBlock == nil {
+		return fmt.Errorf("pem.Decode failed")
+	}
+	app.CACertificate, err = x509.ParseCertificate(pemBlock.Bytes)
+	if err != nil {
+		return err
+	}
+
+	if load_private_key {
+		//      private key
+		caPrivateKeyFile, err := ioutil.ReadFile(app.CertificatePath + "/server.key.pem")
+		if err != nil {
+			panic(err)
+		}
+		pemBlock, _ = pem.Decode(caPrivateKeyFile)
+		if pemBlock == nil {
+			panic(fmt.Errorf("pem.Decode failed"))
+		}
+		/*
+			private_key_password, ok := os.LookupEnv("CA_PRIV_KEY_PASSWORD")
+			if !ok {
+				panic(fmt.Errorf("Missing password for private key\n"))
+			}
+
+
+			der, err := x509.DecryptPEMBlock(pemBlock, []byte(private_key_password))
+			if err != nil {
+				panic(err)
+			}*/
+		privateKey, err := x509.ParsePKCS8PrivateKey(pemBlock.Bytes)
+		if err != nil {
+			panic(err)
+		}
+
+		app.CAPrivateKey = privateKey.(*rsa.PrivateKey)
+	}
+
+	return nil
+}
+
+func (app *App) ListenEvents() {
+	app.Event.Listen()
+}
+
+func (app *App) HandleEvent(event interface{}, handler EventHandlerFunc) {
+	app.Event.Handle(event, handler)
+}
+
+func (app *App) HandleCommand(cmd interface{}, handler func(interface{}) error) {
+	app.Command.Handle(cmd, handler)
+}
+
+func (app *App) Use(h negroni.Handler) {
+	app.Negroni.Use(h)
+}
+
+func (app *App) Get(path string, handler http.HandlerFunc) {
+	app.EnableHttp = true
+	app.Router.HandleFunc(path, handler).Methods("GET")
+}
+
+func (app *App) Post(path string, handler http.HandlerFunc) {
+	app.EnableHttp = true
+	app.Router.HandleFunc(path, handler).Methods("POST")
+
+}
+
+func (app *App) ConnectMariadb() {
+	db, err := sqlx.Connect("mysql", *app.Config.MariaDb)
+	if err != nil {
+		panic(err)
+	}
+
+	app.Database = &Database{db, app.Logger}
+
+}
+
+func (app *App) HttpInternalError(w http.ResponseWriter, err error) {
+	app.HttpError(w, err, http.StatusInternalServerError)
+}
+func (app *App) HttpBadRequest(w http.ResponseWriter, err error) {
+	app.HttpError(w, err, http.StatusBadRequest)
+}
+
+func (app *App) HttpUnauthorized(w http.ResponseWriter, err error) {
+	app.HttpError(w, err, http.StatusUnauthorized)
+}
+
+func (app *App) HttpError(w http.ResponseWriter, err interface{}, status int) {
+	var error_string string
+
+	switch v := err.(type) {
+	case error:
+		error_string = v.Error()
+	case string:
+		error_string = v
+	case *string:
+		error_string = *v
+	default:
+		error_string = "Unknown error"
+	}
+
+	http.Error(w, error_string, status)
+}
+
+func getEventId(event interface{}) string {
+	t := reflect.TypeOf(event)
+	return t.String()
+}
