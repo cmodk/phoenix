@@ -82,20 +82,6 @@ func (db *Database) ParseCriteria(sb *squirrel.SelectBuilder, c Criteria) {
 	typeOfT := c_value.Type()
 	for i := 0; i < c_value.NumField(); i++ {
 		f := c_value.Field(i)
-		ft := typeOfT.Field(i)
-		if !f.IsZero() && f.Kind() != reflect.Struct && f.Kind() != reflect.Slice {
-
-			switch ft.Name {
-			case "Limit":
-				*sb = sb.Limit(uint64(f.Interface().(int)))
-			default:
-				db.Logger.Debugf("%d: %s %s = %v -> %s\n", i,
-					ft.Name, f.Type(), f.Interface(), ft.Tag.Get("schema"))
-				*sb = sb.Where(squirrel.Eq{ft.Tag.Get("schema"): f.Interface()})
-			}
-
-		}
-
 		//Check if custom parsing is implemented
 		v, ok := (f.Interface()).(interface {
 			ParseCriteria(sb *squirrel.SelectBuilder) error
@@ -105,7 +91,22 @@ func (db *Database) ParseCriteria(sb *squirrel.SelectBuilder, c Criteria) {
 				panic(err)
 			}
 
+		} else {
+			ft := typeOfT.Field(i)
+			if !f.IsZero() && f.Kind() != reflect.Struct && f.Kind() != reflect.Slice {
+
+				switch ft.Name {
+				case "Limit":
+					*sb = sb.Limit(uint64(f.Interface().(int)))
+				default:
+					db.Logger.Debugf("%d: %s %s = %v -> %s\n", i,
+						ft.Name, f.Type(), f.Interface(), ft.Tag.Get("db"))
+					*sb = sb.Where(squirrel.Eq{ft.Tag.Get("db"): f.Interface()})
+				}
+
+			}
 		}
+
 	}
 }
 

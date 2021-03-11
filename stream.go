@@ -31,8 +31,8 @@ func (s *Stream) Notification() DeviceNotification {
 }
 
 type StreamCriteria struct {
-	DeviceId uint64 `schema:"device_id"`
-	Code     string `schema:"code"`
+	DeviceId uint64 `schema:"device_id" db:"device_id"`
+	Code     string `schema:"code" db:"code"`
 
 	Limit int `schema:"limit"`
 }

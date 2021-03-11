@@ -270,10 +270,10 @@ func (d *Device) StreamGet(c StreamCriteria) (*Stream, error) {
 }
 
 type DeviceCriteria struct {
-	Id      uint64    `schema:"id"`
-	Guid    string    `schema:"guid"`
-	Token   string    `schema:"token"`
-	Created time.Time `schema:"created"`
+	Id      uint64    `schema:"id" db:"id"`
+	Guid    string    `schema:"guid" db:"guid"`
+	Token   string    `schema:"token" db:"token"`
+	Created time.Time `schema:"created" db:"created"`
 
 	Limit int `schema:"limit"`
 }
@@ -283,8 +283,8 @@ type DeviceNotificationCriteria struct {
 }
 
 type DeviceCommandCriteria struct {
-	DeviceId uint64 `schema:"device_id"`
-	Pending  bool   `schema:"pending"`
+	DeviceId uint64 `schema:"device_id" db:"device_id"`
+	Pending  bool   `schema:"pending" db:"pending"`
 
 	Limit int `schema:"limit"`
 }
