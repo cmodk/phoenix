@@ -1,9 +1,5 @@
 package app
 
-import (
-	"log"
-)
-
 const (
 	CommandBusChannelSize = 1000
 )

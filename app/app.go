@@ -8,7 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"reflect"
@@ -34,6 +33,8 @@ var (
 
 	http_address = flag.String("http-address", "0.0.0.0", "Listening address for http connections")
 	http_port    = flag.Int("http-port", 4010, "Listening post for http connections")
+
+	log *logrus.Logger
 )
 
 func CheckFlags() {
@@ -119,7 +120,7 @@ func (db *Database) Match(dst interface{}, table string, criteria Criteria) erro
 		return err
 	}
 
-	db.Logger.WithField("sql", "matchone").Printf("Executing %s\n", query)
+	db.Logger.WithField("sql", "matchone").Debugf("Executing %s\n", query)
 
 	return db.Select(dst, query, args...)
 
@@ -134,7 +135,7 @@ func (db *Database) MatchOne(dst interface{}, table string, criteria Criteria) e
 		return err
 	}
 
-	db.Logger.WithField("sql", "matchone").Printf("Executing %s\n", query)
+	db.Logger.WithField("sql", "matchone").Debugf("Executing %s\n", query)
 
 	return db.Get(dst, query, args...)
 
@@ -152,12 +153,12 @@ func (db *Database) Insert(entity interface{}, table string) error {
 	}*/
 
 	ignored_fields := map[string]bool{}
-	log.Printf("Inserting to table: %s\n", table)
+	log.Debugf("Inserting to table: %s\n", table)
 	query, args, err := squirrel.Insert(table).SetMap(structToQueryMap(entity, ignored_fields)).ToSql()
 	if err != nil {
 		return err
 	}
-	db.Logger.WithField("sql", "insert").Printf("Executing %s with args %v\n", query, args)
+	db.Logger.WithField("sql", "insert").Debugf("Executing %s with args %v\n", query, args)
 
 	_, err = db.Exec(query, args...)
 
@@ -188,7 +189,7 @@ func (db *Database) Update(entity interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	db.Logger.WithField("sql", "insert").Printf("Executing %s with args %v\n", query, args)
+	db.Logger.WithField("sql", "insert").Debugf("Executing %s with args %v\n", query, args)
 
 	result, err := db.Exec(query, args...)
 	if err != nil {
@@ -251,8 +252,9 @@ func New() *App {
 		env = "dev"
 	}
 
-	log.Printf("Running in environment: %s\n", env)
+	log = logrus.New()
 
+	log.Printf("Running in environment: %s\n", env)
 	config, err := LoadConfig(env)
 	if err != nil {
 		panic(err)
@@ -266,7 +268,7 @@ func New() *App {
 		ListenAddr:      *http_address,
 		ListenPort:      *http_port,
 		Router:          mux.NewRouter(),
-		Logger:          logrus.New(),
+		Logger:          log,
 		EnableHttp:      false,
 		CertificatePath: *app_certificate_path,
 	}
