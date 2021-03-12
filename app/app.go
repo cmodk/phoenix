@@ -100,9 +100,13 @@ func (db *Database) ParseCriteria(sb *squirrel.SelectBuilder, c Criteria) {
 				case "Limit":
 					*sb = sb.Limit(uint64(f.Interface().(int)))
 				default:
-					db.Logger.Debugf("%d: %s %s = %v -> %s\n", i,
-						ft.Name, f.Type(), f.Interface(), ft.Tag.Get("db"))
-					*sb = sb.Where(squirrel.Eq{ft.Tag.Get("db"): f.Interface()})
+					tag, ok := ft.Tag.Lookup("db")
+					if ok {
+						db.Logger.Debugf("%d: %s %s = %v -> %s\n", i,
+							ft.Name, f.Type(), f.Interface(), ft.Tag.Get("db"))
+						*sb = sb.Where(squirrel.Eq{tag: f.Interface()})
+					}
+
 				}
 
 			}
