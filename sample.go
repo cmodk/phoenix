@@ -22,13 +22,17 @@ type Sample struct {
 	Max     *float64 `json:"max,omitempty"`
 	Min     *float64 `json:"min,omitempty"`
 	Count   *int     `json:"count,omitempty"`
+
+	//Optional values
+	Diff *float64 `json:"diff,omitempty"`
 }
 
 type SampleCriteria struct {
-	Streams   []string  `schema:"stream"`
-	From      time.Time `schema:"from"`
-	To        time.Time `schema:"to"`
-	Frequency string    `schema:"frequency"`
+	Streams     []string  `schema:"stream" db:"stream"`
+	From        time.Time `schema:"from" db:"from"`
+	To          time.Time `schema:"to" db:"to"`
+	Frequency   string    `schema:"frequency" db:"frequency"`
+	IncludeDiff bool      `schema:"include_diff"`
 
 	Limit int `schema:"limit"`
 }
@@ -44,6 +48,10 @@ var (
 		"hour":   {10 * time.Minute, time.Hour},
 	}
 )
+
+func FrequencyToDuration(frequency string) time.Duration {
+	return AverageConfigs[frequency].Duration
+}
 
 func ScheduleCalculation(re *redis.Client, ctx context.Context, sampleTime time.Time, averageKey string, deviceGuid string, stream string) error {
 	average_config, ok := AverageConfigs[averageKey]
