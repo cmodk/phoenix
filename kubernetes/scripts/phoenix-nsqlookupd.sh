@@ -1,2 +1,2 @@
 #!/bin/bash
-kubectl port-forward -nmariadb svc/phpmyadmin-service 2023:2020
+kubectl port-forward -nnsq svc/nsqlookupd 4161:4161
