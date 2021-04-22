@@ -164,9 +164,36 @@ func (db *Database) Insert(entity interface{}, table string) error {
 	}
 	db.Logger.WithField("sql", "insert").Debugf("Executing %s with args %v\n", query, args)
 
-	_, err = db.Exec(query, args...)
+	result, err := db.Exec(query, args...)
+	if err != nil {
+		return err
+	}
 
-	return err
+	last_id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Last id: %d\n", last_id)
+
+	t := reflect.TypeOf(entity)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	_, ok := t.FieldByName("Id")
+	if !ok {
+		return nil
+	}
+
+	values := reflect.ValueOf(entity)
+	if values.Kind() == reflect.Ptr {
+		values = values.Elem()
+	}
+	id := values.FieldByName("Id")
+	id.SetUint(uint64(last_id))
+
+	return nil
 }
 
 func (db *Database) Update(entity interface{}) (int64, error) {
@@ -208,6 +235,11 @@ func structToQueryMap(s interface{}, ignore map[string]bool) map[string]interfac
 	m := make(map[string]interface{})
 	t := reflect.TypeOf(s)
 	v := reflect.ValueOf(s)
+
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+		t = t.Elem()
+	}
 
 	for i := 0; i < t.NumField(); i++ {
 		tf := t.Field(i)
