@@ -174,8 +174,6 @@ func (db *Database) Insert(entity interface{}, table string) error {
 		return err
 	}
 
-	fmt.Printf("Last id: %d\n", last_id)
-
 	t := reflect.TypeOf(entity)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
