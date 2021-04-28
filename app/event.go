@@ -74,7 +74,7 @@ func (bus *EventBus) HandleMessage(m *nsq.Message) error {
 		for _, h := range handlers {
 			if err := h.f(event); err != nil {
 				event_data, _ := json.Marshal(event)
-				bus.app.Logger.WithField("event", string(event_data)).Error("Error handling event")
+				bus.app.Logger.WithField("error", err).WithField("event", string(event_data)).Error("Error handling event")
 				return err
 			}
 		}
