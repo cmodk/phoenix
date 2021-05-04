@@ -28,13 +28,13 @@ type Sample struct {
 }
 
 type SampleCriteria struct {
-	Streams     []string  `schema:"stream" db:"stream"`
-	From        time.Time `schema:"from" db:"from"`
-	To          time.Time `schema:"to" db:"to"`
-	Frequency   string    `schema:"frequency" db:"frequency"`
-	IncludeDiff bool      `schema:"include_diff"`
+	Streams     []string   `schema:"stream,omitempty" db:"stream"`
+	From        *time.Time `schema:"from,omitempty" db:"from"`
+	To          *time.Time `schema:"to,omitempty" db:"to"`
+	Frequency   string     `schema:"frequency,omitempty" db:"frequency"`
+	IncludeDiff bool       `schema:"include_diff,omitempty"`
 
-	Limit int `schema:"limit"`
+	Limit int `schema:"limit,omitempty"`
 }
 
 type AverageConfig struct {
