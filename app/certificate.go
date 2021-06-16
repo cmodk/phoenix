@@ -180,7 +180,7 @@ func generateCertificates() error {
 			}
 		}
 
-		new_cert, err := generateX509Certificate(CAKey, 365, true, nil, nil)
+		new_cert, err := generateX509Certificate(CAKey, 3650, true, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -201,7 +201,7 @@ func generateCertificates() error {
 		return err
 	}
 
-	serverCertificate, err := generateX509Certificate(serverKey, 100, true, CACertificate, CAKey)
+	serverCertificate, err := generateX509Certificate(serverKey, 3650, true, CACertificate, CAKey)
 	if err != nil {
 		return err
 	}
