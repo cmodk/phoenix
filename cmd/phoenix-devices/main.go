@@ -1,0 +1,283 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/cmodk/go-simpleflake"
+
+	"github.com/cmodk/phoenix"
+	phoenix_app "github.com/cmodk/phoenix/app"
+	"github.com/gorilla/mux"
+	"github.com/gorilla/schema"
+)
+
+var (
+	app = phoenix.New()
+	lg  = app.Logger
+)
+
+type deviceContextHandler func(http.ResponseWriter, *http.Request, *phoenix.Device)
+
+func main() {
+
+	app.Use(phoenix_app.Cors())
+
+	app.Get("/info", infoHandler)
+
+	app.Get("/device", deviceListHandler)
+	app.Get("/device/{device}", deviceGetHandler)
+	app.Post("/device/{device}/certificate", withParametricDevice(deviceCertificateRequestHandler))
+	app.Get("/device/{device}/notification", withParametricDevice(deviceNotificationListHandler))
+	app.Post("/device/{device}/notification", withParametricDevice(deviceNotificationPostHandler))
+	app.Get("/device/{device}/stream", withParametricDevice(deviceStreamListHandler))
+	app.Get("/device/{device}/sample", withParametricDevice(deviceSampleListHandler))
+	app.Post("/device/{device}/command", withParametricDevice(deviceCommandCreateHandler))
+	app.Get("/device/{device}/command/{command}", withParametricDevice(deviceCommandGetHandler))
+	app.HandleEvent(phoenix.DeviceOnline{}, deviceOnline)
+
+	app.LoadCertificates(true)
+	app.Run()
+}
+
+func deviceOnline(event interface{}) error {
+
+	log.Printf("Device online\n")
+
+	return nil
+}
+
+func infoHandler(w http.ResponseWriter, r *http.Request) {
+
+	info := struct {
+		Version string `json:"version"`
+	}{
+		Version: phoenix.Version,
+	}
+
+	if err := json.NewEncoder(w).Encode(info); err != nil {
+		app.HttpInternalError(w, err)
+		return
+
+	}
+
+}
+
+func deviceListHandler(w http.ResponseWriter, r *http.Request) {
+	c := phoenix.DeviceCriteria{}
+	if err := schema.NewDecoder().Decode(&c, r.URL.Query()); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	ds, err := app.Devices.List(c)
+	if err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(ds); err != nil {
+		app.HttpInternalError(w, err)
+		return
+	}
+}
+
+func deviceGetHandler(w http.ResponseWriter, r *http.Request) {
+
+	device_id := mux.Vars(r)["device"]
+
+	d, err := app.Devices.Get(phoenix.DeviceCriteria{
+		Guid: device_id,
+	})
+	if err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(d); err != nil {
+		app.HttpInternalError(w, err)
+		return
+	}
+}
+
+func deviceNotificationListHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
+	ns, err := d.NotificationList(phoenix.DeviceNotificationCriteria{})
+	if err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+	app.JsonResponse(w, ns)
+}
+
+func deviceNotificationPostHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
+	auth_headers := r.Header["Authorization"]
+	if len(auth_headers) == 0 {
+		app.HttpUnauthorized(w, fmt.Errorf("Missing authentication"))
+		return
+	}
+
+	auth_header := auth_headers[0]
+	bearer := auth_header[7:]
+
+	if d.Token != nil && bearer != *d.Token {
+		app.HttpUnauthorized(w, fmt.Errorf("Invalid token for device"))
+		return
+	}
+
+	var n phoenix.DeviceNotification
+
+	if err := json.NewDecoder(r.Body).Decode(&n); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	n.Id = simpleflake.Next()
+	n.DeviceId = d.Id
+
+	if n.Timestamp.IsZero() {
+		n.Timestamp = time.Now()
+	}
+
+	cmd := phoenix.DeviceNotificationCreate{
+		Id:           n.Id,
+		DeviceGuid:   d.Guid,
+		Notification: n.Notification,
+		Timestamp:    n.Timestamp,
+		Parameters:   n.Parameters,
+	}
+
+	if err := app.Command.Create(cmd); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	//Return any pending commands to device
+	commands, err := d.CommandsPending()
+	if err != nil {
+		lg.WithField("Error", err).Errorf("Error fetching pending commands for device: %s", d.Guid)
+	}
+
+	resp := struct {
+		phoenix.DeviceNotification
+		PendingCommands []phoenix.DeviceCommand `json:"pending_commands"`
+	}{
+		n,
+		commands,
+	}
+
+	if err := app.JsonResponse(w, resp); err == nil {
+		//Potential commands sent to device, mark them sent
+		for _, cmd := range resp.PendingCommands {
+			if err := d.CommandSent(&cmd); err != nil {
+				lg.WithField("Error", err).Errorf("Error marking command sent")
+			}
+		}
+	}
+
+}
+
+func withParametricDevice(h deviceContextHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		device_id := mux.Vars(r)["device"]
+		if len(device_id) == 0 {
+			app.HttpBadRequest(w, fmt.Errorf("Missing device id"))
+			return
+		}
+
+		d, err := app.Devices.Get(phoenix.DeviceCriteria{
+			Guid: device_id,
+		})
+		if err != nil {
+			app.HttpBadRequest(w, fmt.Errorf("Device not found"))
+			return
+		}
+
+		h(w, r, d)
+
+	}
+}
+
+func deviceStreamListHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
+	streams, err := d.StreamList(phoenix.StreamCriteria{})
+	if err != nil {
+		app.HttpInternalError(w, err)
+		return
+	}
+
+	app.JsonResponse(w, streams)
+}
+
+func deviceSampleListHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
+	c := phoenix.SampleCriteria{
+		From:      time.Now().UTC().AddDate(0, 0, -1),
+		To:        time.Now(),
+		Limit:     10000,
+		Frequency: "hour",
+	}
+
+	if err := schema.NewDecoder().Decode(&c, r.URL.Query()); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	samples, err := d.SampleList(c)
+	if err != nil {
+		app.HttpInternalError(w, err)
+		return
+	}
+
+	app.JsonResponse(w, samples)
+}
+
+func deviceCommandCreateHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
+	var command phoenix.DeviceCommand
+
+	if err := json.NewDecoder(r.Body).Decode(&command); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	if err := d.CommandInsert(&command); err != nil {
+		app.HttpInternalError(w, err)
+		return
+	}
+
+	command.DeviceGuid = d.Guid
+
+	if err := app.Event.Publish(phoenix.DeviceCommandCreated(command)); err != nil {
+		app.HttpInternalError(w, err)
+		return
+	}
+
+	app.JsonResponse(w, command)
+}
+
+func deviceCommandGetHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
+
+	command_id := mux.Vars(r)["command"]
+
+	id, err := strconv.ParseUint(command_id, 10, 64)
+	if err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	command, err := d.CommandGet(
+		phoenix.DeviceCommandCriteria{
+			Id: id,
+		})
+	if err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	app.JsonResponse(w, command)
+
+}
