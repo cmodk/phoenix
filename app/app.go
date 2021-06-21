@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gocql/gocql"
 	"github.com/gorilla/mux"
