@@ -9,11 +9,14 @@ else
 fi
 
 SECRET=phoenix-certificates
+KUBECTL="kubectl -n$NAMESPACE"
 
-kubectl delete secret $SECRET --namespace phoenix-$NS
-kubectl create secret generic $SECRET \
+$KUBECTL delete secret $SECRET
+$KUBECTL create secret generic $SECRET \
   --from-file=./certificates/ca.pem \
   --from-file=./certificates/ca.key.pem \
   --from-file=./certificates/server.pem \
-  --from-file=./certificates/server.key.pem \
-  --namespace=phoenix-$NS
+  --from-file=./certificates/server.key.pem
+
+#Refresh pods to load new certificate
+$KUBECTL -nphoenix-production get pods -o name |grep phoenix  |xargs $KUBECTL delete  
