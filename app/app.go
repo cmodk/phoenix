@@ -39,6 +39,11 @@ var (
 
 func CheckFlags() {
 
+	//App might not be initialized, so create a logrus instance for the very low level operations
+	if log == nil {
+		log = logrus.New()
+	}
+
 	if *app_certificate_generate {
 		if err := generateCertificates(); err != nil {
 			panic(err)
