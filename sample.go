@@ -46,6 +46,7 @@ var (
 	AverageConfigs = map[string]AverageConfig{
 		"minute": {10 * time.Second, time.Minute},
 		"hour":   {10 * time.Minute, time.Hour},
+		"day":    {6 * time.Hour, 24 * time.Hour},
 	}
 )
 
