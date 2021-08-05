@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 )
 
 func ConnectRedis(config string) (*redis.Client, error) {
