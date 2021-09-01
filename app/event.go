@@ -127,7 +127,6 @@ func (bus *EventBus) Listen() {
 
 func (bus *EventBus) Handle(event interface{}, handler EventHandlerFunc) {
 	event_id := getEventId(event)
-	log.Printf("Registering event: %s\n", event_id)
 	h := EventHandler{handler, reflect.TypeOf(event)}
 	bus.handlers[event_id] = append(bus.handlers[event_id], h)
 }
