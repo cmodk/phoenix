@@ -52,9 +52,11 @@ var (
 		"cassandra-create-notification-table":       PhoenixCommand{cassandraCreateNotificationTable, true},
 		"cassandra-create-sample-table":             PhoenixCommand{cassandraCreateSampleTable, true},
 		"cassandra-create-sample-aggregated-tables": PhoenixCommand{cassandraCreateSampleAggregatedTables, true},
+		"cassandra-create-stream-string-table":      PhoenixCommand{cassandraCreateStreamStringTable, true},
 		"docker-build-images":                       PhoenixCommand{dockerBuildImages, false},
 		"device-migrate-data":                       PhoenixCommand{deviceMigrateData, true},
 		"device-samples-schedule-average":           PhoenixCommand{deviceSampleScheduleAverage, true},
+		"device-stream-string-reupdate":             PhoenixCommand{deviceStreamStringReUpdate, true},
 	}
 )
 
@@ -217,6 +219,19 @@ CREATE TABLE IF NOT EXISTS samples_%s(
 
 }
 
+func cassandraCreateStreamStringTable() error {
+	return ph.Cassandra.Query(`
+CREATE TABLE stream_strings(
+    device text,
+    stream text,
+    timestamp timestamp,
+    value text,
+    PRIMARY KEY ((device, stream), timestamp)
+) WITH CLUSTERING ORDER BY (timestamp DESC)
+`).Exec()
+
+}
+
 func deviceMigrateData() error {
 
 	hh := simplehttp.New(*remote_host, lg)
@@ -311,4 +326,76 @@ func deviceSampleScheduleAverage() error {
 	}
 
 	return nil
+}
+
+func deviceStreamStringReUpdate() error {
+
+	c := phoenix.DeviceCriteria{}
+
+	if len(*device_guid) > 0 {
+		c.Guid = *device_guid
+	}
+	devices, err := ph.Devices.List(c)
+	if err != nil {
+		log.Error("Could not get devices")
+		return err
+	}
+
+	for _, d := range *devices {
+
+		log.Printf("Processing device: %s", d.Guid)
+		//		current, err := time.Parse(time.RFC3339, "2020-01-01T00:00:00Z")
+		current, err := time.Parse(time.RFC3339, "2021-05-18T00:00:00Z")
+		if err != nil {
+			return err
+		}
+
+		for current.Before(time.Now()) {
+			to := current.Add(time.Hour)
+			notifications, err := d.NotificationList(phoenix.DeviceNotificationCriteria{
+				From: current,
+				To:   to,
+			})
+			if err != nil {
+				return err
+			}
+
+			log.Debugf("%s: Got %d notifications", current.Format(time.RFC3339), len(notifications))
+
+			for _, n := range notifications {
+				if n.Notification == "stream" {
+					var s phoenix.Stream
+
+					if n.Parameters[0] == 91 {
+						//This is an array, which must be an error from testing the first batch stream notification
+						log.Warningf("%s: Ignoring notification with bad stream parameters, seems to be an array", d.Guid)
+						continue
+					}
+
+					if err := json.Unmarshal(n.Parameters, &s); err != nil {
+						log.WithField("notification", n).WithField("parameters", string(n.Parameters)).WithField("stream", s).Error(err)
+						continue
+					}
+					value, ok := s.Value.(string)
+					if ok {
+						timestamp := s.Timestamp
+						if timestamp == nil || timestamp.IsZero() {
+							//Use notification time
+							timestamp = &(n.Timestamp)
+						}
+						log.Debugf("String: %s -> %s -> %s", s.Code, timestamp, value)
+						update := phoenix.StreamUpdated(s)
+						update.DeviceGuid = &(d.Guid)
+						update.DeviceId = d.Id
+						phoenix.StringSave(update)
+					}
+				}
+			}
+
+			current = to
+		}
+	}
+
+	return nil
+
 }
