@@ -37,6 +37,11 @@ type SampleCriteria struct {
 	Limit int `schema:"limit,omitempty"`
 }
 
+type StreamStringValue struct {
+	Timestamp time.Time `json:"timestamp"`
+	Value     string    `json:"value"`
+}
+
 type AverageConfig struct {
 	ScheduleTime time.Duration
 	Duration     time.Duration

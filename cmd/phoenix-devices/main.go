@@ -22,6 +22,7 @@ var (
 )
 
 type deviceContextHandler func(http.ResponseWriter, *http.Request, *phoenix.Device)
+type streamContextHandler func(http.ResponseWriter, *http.Request, *phoenix.Device, *phoenix.Stream)
 
 func main() {
 
@@ -35,6 +36,7 @@ func main() {
 	app.Get("/device/{device}/notification", withParametricDevice(deviceNotificationListHandler))
 	app.Post("/device/{device}/notification", withParametricDevice(deviceNotificationPostHandler))
 	app.Get("/device/{device}/stream", withParametricDevice(deviceStreamListHandler))
+	app.Get("/device/{device}/stream/{stream}", withParametricDevice(withParametricStream(deviceStreamValueListHandler)))
 	app.Get("/device/{device}/sample", withParametricDevice(deviceSampleListHandler))
 	app.Post("/device/{device}/command", withParametricDevice(deviceCommandCreateHandler))
 	app.Get("/device/{device}/command/{command}", withParametricDevice(deviceCommandGetHandler))
@@ -204,6 +206,28 @@ func withParametricDevice(h deviceContextHandler) http.HandlerFunc {
 	}
 }
 
+func withParametricStream(h streamContextHandler) deviceContextHandler {
+	return func(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
+
+		stream_code := mux.Vars(r)["stream"]
+		if len(stream_code) == 0 {
+			app.HttpBadRequest(w, fmt.Errorf("Missing stream code"))
+			return
+		}
+
+		s, err := d.StreamGet(phoenix.StreamCriteria{
+			Code: stream_code,
+		})
+		if err != nil {
+			app.HttpBadRequest(w, fmt.Errorf("Stream not found"))
+			return
+		}
+
+		h(w, r, d, s)
+
+	}
+}
+
 func deviceStreamListHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
 	streams, err := d.StreamList(phoenix.StreamCriteria{})
 	if err != nil {
@@ -228,6 +252,30 @@ func deviceSampleListHandler(w http.ResponseWriter, r *http.Request, d *phoenix.
 	}
 
 	samples, err := d.SampleList(c)
+	if err != nil {
+		app.HttpInternalError(w, err)
+		return
+	}
+
+	app.JsonResponse(w, samples)
+}
+
+func deviceStreamValueListHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device, s *phoenix.Stream) {
+	c := phoenix.SampleCriteria{
+		From:      time.Now().UTC().AddDate(0, 0, -1),
+		To:        time.Now(),
+		Limit:     10000,
+		Frequency: "hour",
+	}
+
+	if err := schema.NewDecoder().Decode(&c, r.URL.Query()); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	c.Streams = []string{s.Code}
+
+	samples, err := d.StreamValueList(c)
 	if err != nil {
 		app.HttpInternalError(w, err)
 		return

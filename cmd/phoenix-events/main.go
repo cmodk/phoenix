@@ -28,6 +28,7 @@ func main() {
 	app.HandleEvent(phoenix.DeviceNotificationCreated{}, updateLastKnownValue)
 	app.HandleEvent(phoenix.DeviceNotificationCreated{}, splitBatchNotifications)
 	app.HandleEvent(phoenix.StreamUpdated{}, saveSample)
+	app.HandleEvent(phoenix.StreamUpdated{}, phoenix.StringSave)
 	app.HandleEvent(phoenix.StreamUpdated{}, pipeEvents)
 	app.HandleEvent(phoenix.DeviceNotificationCreated{}, pipeEvents)
 

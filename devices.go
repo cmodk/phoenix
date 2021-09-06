@@ -224,6 +224,51 @@ func (d *Device) SampleList(c SampleCriteria) ([]Sample, error) {
 	return samples, nil
 }
 
+func (d *Device) StreamValueList(c SampleCriteria) ([]StreamStringValue, error) {
+	max_samples := 1000000
+	var values []StreamStringValue
+
+	if len(c.Streams) != 1 {
+		return values, fmt.Errorf("Not possible to request string values from multiple streams")
+	}
+
+	if c.Limit == 0 {
+		c.Limit = max_samples
+	}
+
+	for _, s := range c.Streams {
+		query := d.ca.Query("SELECT timestamp,value FROM stream_strings WHERE device = ? AND stream = ? AND timestamp > ? and timestamp < ?  LIMIT ?",
+			d.Guid,
+			s,
+			c.From,
+			c.To,
+			c.Limit)
+		log.Debugf("Executing cassandra query: %s\n", query.String())
+		iter := query.Iter()
+		for {
+			row := make(map[string]interface{})
+			if !iter.MapScan(row) {
+				break
+			}
+			value := StreamStringValue{
+				Timestamp: row["timestamp"].(time.Time),
+				Value:     row["value"].(string),
+			}
+			values = append(values, value)
+			if len(values) == max_samples {
+				break
+			}
+		}
+		iter.Close()
+
+		if len(values) == max_samples {
+			break
+		}
+
+	}
+	return values, nil
+}
+
 func (d *Device) StreamUpdate(s Stream) error {
 
 	current, err := d.StreamGet(StreamCriteria{
