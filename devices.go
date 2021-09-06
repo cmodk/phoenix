@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/cmodk/go-simpleflake"
@@ -90,7 +89,7 @@ func (d *Device) NotificationList(c DeviceNotificationCriteria) ([]DeviceNotific
 
 	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ?", d.Guid)
 
-	log.Printf("Executing cassandra query: %s\n", query.String())
+	log.Debugf("Executing cassandra query: %s\n", query.String())
 	iter := query.Iter()
 	for {
 		row := make(map[string]interface{})
@@ -151,7 +150,7 @@ func (d *Device) SampleList(c SampleCriteria) ([]Sample, error) {
 				c.From,
 				c.To,
 				c.Limit)
-			log.Printf("Executing cassandra query: %s\n", query.String())
+			log.Debugf("Executing cassandra query: %s\n", query.String())
 			iter := query.Iter()
 			for {
 				row := make(map[string]interface{})
@@ -187,7 +186,7 @@ func (d *Device) SampleList(c SampleCriteria) ([]Sample, error) {
 				c.From,
 				c.To,
 				c.Limit)
-			log.Printf("Executing cassandra query: %s\n", query.String())
+			log.Debugf("Executing cassandra query: %s\n", query.String())
 			iter := query.Iter()
 			for {
 				row := make(map[string]interface{})

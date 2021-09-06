@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -23,8 +22,9 @@ type PhoenixCommand struct {
 }
 
 var (
-	ph *phoenix.Phoenix
-	lg *logrus.Logger
+	ph  *phoenix.Phoenix
+	lg  = logrus.New()
+	log = lg
 
 	remote_host  = flag.String("remote-host", "localhost", "Remote host adddress")
 	device_guid  = flag.String("device", "", "Device guid")
@@ -84,8 +84,6 @@ func main() {
 		lg = ph.Logger
 
 		//phoenix.SetDebug(debug)
-	} else {
-		lg = logrus.New()
 	}
 
 	if debug {

@@ -1,11 +1,14 @@
 package phoenix
 
 import (
+	"github.com/sirupsen/logrus"
+
 	"github.com/cmodk/phoenix/app"
 )
 
 var (
 	phoenix *Phoenix
+	log     *logrus.Logger
 )
 
 type DeviceEvent struct {
@@ -23,6 +26,8 @@ func New() *Phoenix {
 	phoenix = &Phoenix{
 		App: app.New(),
 	}
+
+	log = phoenix.Logger
 
 	phoenix.ConnectMariadb()
 

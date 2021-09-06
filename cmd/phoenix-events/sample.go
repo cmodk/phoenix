@@ -38,7 +38,7 @@ func updateLastKnownValue(event interface{}) error {
 		return err
 	}
 
-	app.Logger.WithField("stream", e).Info("Updating value")
+	app.Logger.WithField("stream", e).Debug("Updating value")
 	stream.DeviceId = d.Id
 	stream.DeviceGuid = &(d.Guid)
 

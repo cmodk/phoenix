@@ -85,7 +85,7 @@ func splitBatchNotifications(event interface{}) error {
 			return err
 		}
 
-		log.Printf("Stream data: %s", string(stream_data))
+		log.Debugf("Stream data: %s", string(stream_data))
 
 		cmd := phoenix.DeviceNotificationCreate{
 			Id:           id,

@@ -1,13 +1,7 @@
 package phoenix
 
-import (
-	"log"
-)
-
 func deviceNotificationCreate(command interface{}) error {
 	cmd := command.(DeviceNotificationCreate)
-
-	log.Printf("Creating device notification: %v\n", cmd)
 
 	d, err := phoenix.Devices.Get(DeviceCriteria{
 		Guid: cmd.DeviceGuid,
@@ -15,8 +9,6 @@ func deviceNotificationCreate(command interface{}) error {
 	if err != nil {
 		return err
 	}
-
-	log.Printf("Found device: %v\n", d)
 
 	n := DeviceNotification{
 		Id:           cmd.Id,

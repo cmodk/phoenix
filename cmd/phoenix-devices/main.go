@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/cmodk/go-simpleflake"
+	"github.com/sirupsen/logrus"
 
 	"github.com/cmodk/phoenix"
 	phoenix_app "github.com/cmodk/phoenix/app"
@@ -17,14 +19,19 @@ import (
 )
 
 var (
-	app = phoenix.New()
-	lg  = app.Logger
+	app   = phoenix.New()
+	lg    = app.Logger
+	debug = flag.Bool("debug", false, "Enable debug output")
 )
 
 type deviceContextHandler func(http.ResponseWriter, *http.Request, *phoenix.Device)
 type streamContextHandler func(http.ResponseWriter, *http.Request, *phoenix.Device, *phoenix.Stream)
 
 func main() {
+	flag.Parse()
+	if *debug {
+		app.Logger.Level = logrus.DebugLevel
+	}
 
 	app.Use(phoenix_app.Cors())
 
