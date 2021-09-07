@@ -346,13 +346,6 @@ func New() *App {
 
 	app.Negroni = negroni.New()
 
-	app.Http = &http.Server{
-		Handler:      app.Negroni,
-		Addr:         fmt.Sprintf("%s:%d", app.ListenAddr, app.ListenPort),
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-	}
-
 	return app
 }
 
@@ -379,6 +372,12 @@ func (app *App) Run() {
 	go app.Command.Listen()
 	log.Printf("Running application\n")
 
+	app.Http = &http.Server{
+		Handler:      app.Negroni,
+		Addr:         fmt.Sprintf("%s:%d", app.ListenAddr, app.ListenPort),
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+	}
 	if app.EnableHttp {
 		app.Logger.Info("Listening for http connections")
 		log.Fatal(app.Http.ListenAndServe())
