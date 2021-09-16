@@ -33,6 +33,7 @@ var (
 
 	http_address = flag.String("http-address", "0.0.0.0", "Listening address for http connections")
 	http_port    = flag.Int("http-port", 4010, "Listening post for http connections")
+	http_use_tls = flag.Bool("http-use-tls", false, "Use TLS for http connections")
 
 	log *logrus.Logger
 )
@@ -70,6 +71,7 @@ type App struct {
 	Event   *EventBus
 
 	EnableHttp bool
+	UseTLS     bool
 
 	CertificatePath string
 	CACertificate   *x509.Certificate
@@ -309,6 +311,7 @@ func New() *App {
 		Router:          mux.NewRouter(),
 		Logger:          log,
 		EnableHttp:      false,
+		UseTLS:          *http_use_tls,
 		CertificatePath: *app_certificate_path,
 	}
 
@@ -379,8 +382,13 @@ func (app *App) Run() {
 		ReadTimeout:  15 * time.Second,
 	}
 	if app.EnableHttp {
-		app.Logger.Info("Listening for http connections")
-		log.Fatal(app.Http.ListenAndServe())
+		if app.UseTLS {
+			log.Fatal(app.Http.ListenAndServeTLS("server.crt", "server.key"))
+		} else {
+			app.Logger.Info("Listening for http connections")
+			log.Fatal(app.Http.ListenAndServe())
+		}
+
 	} else {
 		for {
 			time.Sleep(time.Second * 60)
