@@ -31,9 +31,11 @@ var (
 	app_certificate_path        = flag.String("certificate-path", "./certificates", "Search path for certificates")
 	app_certificate_common_name = flag.String("common-name", "localhost", "DNS name for certificates")
 
-	http_address = flag.String("http-address", "0.0.0.0", "Listening address for http connections")
-	http_port    = flag.Int("http-port", 4010, "Listening post for http connections")
-	http_use_tls = flag.Bool("http-use-tls", false, "Use TLS for http connections")
+	http_address         = flag.String("http-address", "0.0.0.0", "Listening address for http connections")
+	http_port            = flag.Int("http-port", 4010, "Listening post for http connections")
+	http_use_tls         = flag.Bool("http-use-tls", false, "Use TLS for http connections")
+	http_tls_certificate = flag.String("http-tls-certificate", "server.crt", "Certificate file for tls")
+	http_tls_key         = flag.String("http-tls-key", "server.key", "Private key file for tls")
 
 	log *logrus.Logger
 )
@@ -383,7 +385,7 @@ func (app *App) Run() {
 	}
 	if app.EnableHttp {
 		if app.UseTLS {
-			log.Fatal(app.Http.ListenAndServeTLS("server.crt", "server.key"))
+			log.Fatal(app.Http.ListenAndServeTLS(*http_tls_certificate, *http_tls_key))
 		} else {
 			app.Logger.Info("Listening for http connections")
 			log.Fatal(app.Http.ListenAndServe())
