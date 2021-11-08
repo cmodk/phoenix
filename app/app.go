@@ -87,6 +87,19 @@ type Database struct {
 
 type Criteria interface{}
 
+//Find the field Populate (if present) and return the value
+func HasPopulate(c Criteria) bool {
+	v := reflect.ValueOf(c)
+
+	populate := v.FieldByName("Populate")
+
+	if !populate.IsValid() {
+		return false
+	}
+
+	return populate.Bool()
+}
+
 func (db *Database) ParseCriteria(sb *squirrel.SelectBuilder, c Criteria) {
 	c_value := reflect.ValueOf(c)
 	typeOfT := c_value.Type()
