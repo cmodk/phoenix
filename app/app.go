@@ -36,6 +36,7 @@ var (
 	http_use_tls         = flag.Bool("http-use-tls", false, "Use TLS for http connections")
 	http_tls_certificate = flag.String("http-tls-certificate", "server.crt", "Certificate file for tls")
 	http_tls_key         = flag.String("http-tls-key", "server.key", "Private key file for tls")
+	http_timeout         = flag.Int("http-timeout", 120, "Timeout for http requests in seconds")
 
 	log *logrus.Logger
 )
@@ -397,8 +398,8 @@ func (app *App) Run() {
 	app.Http = &http.Server{
 		Handler:      app.Negroni,
 		Addr:         fmt.Sprintf("%s:%d", app.ListenAddr, app.ListenPort),
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		WriteTimeout: time.Duration(*http_timeout) * time.Second,
+		ReadTimeout:  time.Duration(*http_timeout) * time.Second,
 	}
 	if app.EnableHttp {
 		if app.UseTLS {
