@@ -362,6 +362,10 @@ func New() *App {
 		}
 	}
 
+	if config.MariaDb != nil {
+		app.ConnectMariadb()
+	}
+
 	app.Negroni = negroni.New()
 
 	return app
