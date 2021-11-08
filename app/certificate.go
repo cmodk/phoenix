@@ -214,7 +214,7 @@ func generateCertificates() error {
 		return err
 	}
 
-	log.Printf("Certificates ready\n")
+	fmt.Printf("Certificates ready\n")
 	os.Exit(0)
 
 	return nil
