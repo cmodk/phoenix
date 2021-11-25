@@ -512,6 +512,10 @@ func (app *App) HttpUnauthorized(w http.ResponseWriter, err error) {
 	app.HttpError(w, err, http.StatusUnauthorized)
 }
 
+func (app *App) HttpNotFound(w http.ResponseWriter, err error) {
+	app.HttpError(w, err, http.StatusNotFound)
+}
+
 func (app *App) HttpError(w http.ResponseWriter, err interface{}, status int) {
 	var error_string string
 
