@@ -2,17 +2,20 @@ resources:
 - name: source-code
   type: git
   source: 
-    uri: git@github.com/cmodk/phoenix
+    uri: git@github.com:cmodk/phoenix.git
     branch: master
-    private_key: ((github-cmodk-key))
+    private_key: ((github-cmodk-key.id_rsa))
 jobs:
 - name: build
   plan:
   - get: source-code
     trigger: true
   - task: simple-task
+    privileged: true
     config:
       platform: linux
+      image_resource:
+        type: registry-image
+        source: { repository: busybox }
       run:
-        path: echo
-        args: ["Hello world"]
+        path: "./deploy.sh"
