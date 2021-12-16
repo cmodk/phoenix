@@ -292,7 +292,7 @@ func (d *Device) StreamUpdate(s Stream) error {
 	if current == nil {
 		//Not found
 		s.DeviceId = d.Id
-		return d.db.Insert(s, "device_streams")
+		return d.db.Insert(&s, "device_streams")
 	}
 
 	if current.Timestamp == nil || (s.Timestamp != nil && s.Timestamp.After(*current.Timestamp)) {
