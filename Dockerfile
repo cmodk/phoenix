@@ -8,10 +8,9 @@ COPY app/ /git/app/.
 COPY go.mod /git/.
 COPY go.sum /git/.
 RUN mkdir -p bin/
-RUN ls -l
 RUN go build -o bin/ ./cmd/*
 
-FROM alpine:3
+FROM alpine:3 AS image
 ARG TARGETARCH
 ARG TARGETOS
 ARG arg_application=INVALID
