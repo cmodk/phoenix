@@ -1,6 +1,8 @@
 FROM golang:1.16 AS build
 ARG TARGETARCH
 ARG TARGETOS
+ARG arg_application=INVALID
+ENV env_application=$arg_application
 WORKDIR /git
 COPY *.go /git/.
 COPY cmd/ /git/cmd/.
@@ -8,7 +10,7 @@ COPY app/ /git/app/.
 COPY go.mod /git/.
 COPY go.sum /git/.
 RUN mkdir -p bin/
-RUN go build -o bin/ ./cmd/*
+RUN go build -o bin/ ./cmd/$env_application
 
 FROM alpine:3 AS image
 ARG TARGETARCH
