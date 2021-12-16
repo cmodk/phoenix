@@ -7,7 +7,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/big"
 	"net/http"
 	"time"
@@ -18,16 +17,24 @@ import (
 func deviceCertificateRequestHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
 
 	if d.Token != nil {
-		app.HttpBadRequest(w, fmt.Errorf("Device already assigned certificate"))
-		return
+		//Check if device tries to renew a certificate
+		auth_header := r.Header["Authorization"]
+		if len(auth_header) == 0 {
+			app.HttpBadRequest(w, fmt.Errorf("Device already assigned certificate"))
+			return
+		}
+
+		bearer := auth_header[0][7:]
+
+		if bearer != *d.Token {
+			app.HttpBadRequest(w, fmt.Errorf("Wrong token for certificate renewal"))
+			return
+		}
 	}
 
 	body, _ := ioutil.ReadAll(r.Body)
 
-	log.Printf("Body: %s\n", body)
-
 	block, _ := pem.Decode(body)
-	log.Printf("Bytes: %s\n", block.Bytes)
 
 	csr, err := x509.ParseCertificateRequest(block.Bytes)
 	if err != nil {
@@ -35,14 +42,13 @@ func deviceCertificateRequestHandler(w http.ResponseWriter, r *http.Request, d *
 		return
 	}
 
-	log.Printf("Fisk: %s\n", csr.Subject.CommonName)
-	for _, n := range csr.Subject.Names {
-		log.Printf("Certs: %s -> %s\n", n.Type, n.Value)
-	}
-
 	if err = csr.CheckSignature(); err != nil {
 		panic(err)
 	}
+
+	now := time.Now()
+	not_before := now
+	not_after := now.Add(certificate_expiration_time)
 
 	// create client certificate template
 	clientCRTTemplate := x509.Certificate{
@@ -55,8 +61,8 @@ func deviceCertificateRequestHandler(w http.ResponseWriter, r *http.Request, d *
 		SerialNumber: big.NewInt(int64(d.Id)),
 		Issuer:       app.CACertificate.Subject,
 		Subject:      csr.Subject,
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().AddDate(0, 0, 365),
+		NotBefore:    not_before,
+		NotAfter:     not_after,
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	}
@@ -76,8 +82,12 @@ func deviceCertificateRequestHandler(w http.ResponseWriter, r *http.Request, d *
 	h.Write(clientCRTRaw)
 
 	certificate_hash := fmt.Sprintf("%x", h.Sum(nil))
-	fmt.Printf("Cert hash: %s\n", certificate_hash)
 	if err := d.Update("token", &certificate_hash); err != nil {
+		app.HttpInternalError(w, err)
+		return
+	}
+
+	if err := d.Update("token_expiration", &not_after); err != nil {
 		app.HttpInternalError(w, err)
 		return
 	}

@@ -19,9 +19,12 @@ import (
 )
 
 var (
-	app   = phoenix.New()
-	lg    = app.Logger
-	debug = flag.Bool("debug", false, "Enable debug output")
+	app                    = phoenix.New()
+	lg                     = app.Logger
+	debug                  = flag.Bool("debug", false, "Enable debug output")
+	certificate_expiration = flag.String("certificate-expiration", "2160h", "Device certificate expiration time, default is 90 days = 2160 hours")
+
+	certificate_expiration_time time.Duration
 )
 
 type deviceContextHandler func(http.ResponseWriter, *http.Request, *phoenix.Device)
@@ -31,6 +34,16 @@ func main() {
 	flag.Parse()
 	if *debug {
 		app.Logger.Level = logrus.DebugLevel
+	}
+
+	var err error
+	certificate_expiration_time, err = time.ParseDuration(*certificate_expiration)
+	if err != nil {
+		lg.WithField("error", err).Fatal("Error parsing certificate expiration string: %s\n", certificate_expiration)
+	}
+
+	if err := app.App.CheckAndUpdateDatabase(phoenix.DatabaseStructure); err != nil {
+		panic(err)
 	}
 
 	app.Use(phoenix_app.Cors())
