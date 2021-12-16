@@ -49,13 +49,14 @@ func (devices *Devices) Get(c DeviceCriteria) (*Device, error) {
 }
 
 type Device struct {
-	db      *app.Database
-	ca      *gocql.Session
-	Id      uint64    `db:"id" json:"id"`
-	Guid    string    `db:"guid" json:"guid"`
-	Created time.Time `db:"created" json:"created"`
-	Token   *string   `db:"token" json:"-"`
-	Online  bool      `db:"online" json:"online"`
+	db              *app.Database
+	ca              *gocql.Session
+	Id              uint64     `db:"id" json:"id"`
+	Guid            string     `db:"guid" json:"guid"`
+	Created         time.Time  `db:"created" json:"created"`
+	Token           *string    `db:"token" json:"-"`
+	TokenExpiration *time.Time `db:"token_expiration" json:"token_expiration"`
+	Online          bool       `db:"online" json:"online"`
 }
 
 func (d *Device) UpdateOnlineStatus(status bool) error {
