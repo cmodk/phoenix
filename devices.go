@@ -95,7 +95,10 @@ func (d *Device) NotificationList(c DeviceNotificationCriteria) ([]DeviceNotific
 
 	var notifications []DeviceNotification
 
-	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ?", d.Guid)
+	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ? AND timestamp >= ? AND timestamp <?",
+		d.Guid,
+		c.From,
+		c.To)
 
 	log.Debugf("Executing cassandra query: %s\n", query.String())
 	iter := query.Iter()
@@ -333,7 +336,9 @@ type DeviceCriteria struct {
 }
 
 type DeviceNotificationCriteria struct {
-	Limit int `schema:"limit"`
+	From  time.Time `schema:"from"`
+	To    time.Time `schema:"to"`
+	Limit int       `schema:"limit"`
 }
 
 type DeviceCommandCriteria struct {
