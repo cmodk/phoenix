@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/cmodk/go-simpleflake"
 	"github.com/cmodk/phoenix/app"
 	"github.com/gocql/gocql"
@@ -27,6 +28,12 @@ func (devices *Devices) List(c DeviceCriteria) (*[]Device, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	for i, _ := range ds {
+		d := &(ds[i])
+		d.db = devices.db
+		d.ca = devices.ca
 	}
 
 	return &ds, nil
@@ -298,6 +305,7 @@ func (d *Device) StreamUpdate(s Stream) error {
 }
 
 func (d *Device) StreamList(c StreamCriteria) (*([]Stream), error) {
+	c.DeviceId = d.Id
 	var streams []Stream
 	if err := d.db.Match(&streams, "device_streams", c); err != nil {
 		return nil, err
@@ -306,6 +314,7 @@ func (d *Device) StreamList(c StreamCriteria) (*([]Stream), error) {
 	return &streams, nil
 }
 func (d *Device) StreamGet(c StreamCriteria) (*Stream, error) {
+	c.DeviceId = d.Id
 	var s Stream
 	if err := d.db.MatchOne(&s, "device_streams", c); err != nil {
 		return nil, err
@@ -328,6 +337,7 @@ type DeviceNotificationCriteria struct {
 }
 
 type DeviceCommandCriteria struct {
+	Id       uint64 `schema:"id" db:"id"`
 	DeviceId uint64 `schema:"device_id" db:"device_id"`
 	Pending  bool   `schema:"pending" db:"pending"`
 
@@ -342,7 +352,35 @@ func (d *Device) CommandInsert(command *DeviceCommand) error {
 	command.DeviceId = d.Id
 	command.Pending = true
 
-	return d.db.Insert(*command, "device_commands")
+	return d.db.Insert(command, "device_commands")
+}
+
+func (d *Device) CommandGet(c DeviceCommandCriteria) (*DeviceCommand, error) {
+	c.DeviceId = d.Id
+
+	var command DeviceCommand
+	if err := d.db.MatchOne(&command, "device_commands", c); err != nil {
+		return nil, err
+	}
+
+	return &command, nil
+
+}
+
+func (d *Device) CommandResponse(cmd *DeviceCommand, value interface{}) error {
+	response, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+
+	query, args, err := squirrel.Update("device_commands").Set("response", response).Where(squirrel.Eq{"id": cmd.Id}).ToSql()
+	if err != nil {
+		return err
+	}
+
+	phoenix.Logger.Debugf("Executing: %s -> %v", query, args)
+	_, err = d.db.Exec(query, args...)
+	return err
 }
 
 func (d *Device) CommandSent(cmd *DeviceCommand) error {
