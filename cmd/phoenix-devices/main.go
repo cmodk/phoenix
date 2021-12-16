@@ -147,8 +147,15 @@ func deviceNotificationPostHandler(w http.ResponseWriter, r *http.Request, d *ph
 	auth_header := auth_headers[0]
 	bearer := auth_header[7:]
 
-	if d.Token != nil && bearer != *d.Token {
+	if d.Token == nil || bearer != *d.Token {
 		app.HttpUnauthorized(w, fmt.Errorf("Invalid token for device"))
+		return
+	}
+
+	if d.TokenExpiration.Before(time.Now()) {
+		err := fmt.Errorf("Token expired")
+		app.Logger.WithField("device", d).WithField("error", err).Error(err)
+		app.HttpUnauthorized(w, err)
 		return
 	}
 
