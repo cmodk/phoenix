@@ -22,7 +22,7 @@ RUN apk update
 RUN apk add libc6-compat
 
 RUN mkdir -p /usr/local/share/phoenix/config
-COPY bin/$env_application /usr/local/share/phoenix/
+COPY --from=build bin/$env_application /usr/local/share/phoenix/
 WORKDIR /usr/local/share/phoenix
 CMD /usr/local/share/phoenix/$env_application
 
