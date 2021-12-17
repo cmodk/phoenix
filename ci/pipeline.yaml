@@ -10,12 +10,13 @@ jobs:
   plan:
   - get: source-code
     trigger: true
-  - task: simple-task
+  - task: phoenix-devices
     privileged: true
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source: { repository: busybox }
-      run:
-        path: "./deploy.sh"
+    file: source-code/ci/build.yml
+  - task: phoenix-mqtt
+    privileged: true
+    file: source-code/ci/build.yml
+
+
+
+  
