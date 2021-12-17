@@ -14,11 +14,12 @@ type DeviceNotification struct {
 }
 
 type DeviceCommand struct {
-	Id         uint64          `db:"id" json:"id" table:"device_commands"`
-	DeviceId   uint64          `db:"device_id" json:"-"`
-	DeviceGuid string          `db:"device_guid" json:"device_guid"`
-	Command    string          `db:"command" json:"command"`
-	Pending    bool            `db:"pending" json:"pending"`
-	Created    time.Time       `db:"created" json:"created"`
-	Parameters json.RawMessage `db:"parameters" json:"parameters"`
+	Id         uint64           `db:"id" json:"id" table:"device_commands"`
+	DeviceId   uint64           `db:"device_id" json:"-"`
+	DeviceGuid string           `db:"device_guid" json:"device_guid"`
+	Command    string           `db:"command" json:"command"`
+	Pending    bool             `db:"pending" json:"pending"`
+	Created    time.Time        `db:"created" json:"created"`
+	Parameters *json.RawMessage `db:"parameters" json:"parameters"`
+	Response   *json.RawMessage `db:"response" json:"response"`
 }

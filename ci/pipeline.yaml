@@ -1,0 +1,22 @@
+resources:
+- name: source-code
+  type: git
+  source: 
+    uri: git@github.com:cmodk/phoenix.git
+    branch: master
+    private_key: ((github-cmodk-key.id_rsa))
+jobs:
+- name: build
+  plan:
+  - get: source-code
+    trigger: true
+  - task: phoenix-devices
+    privileged: true
+    file: source-code/ci/build.yml
+  - task: phoenix-mqtt
+    privileged: true
+    file: source-code/ci/build.yml
+
+
+
+  

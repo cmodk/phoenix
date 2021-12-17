@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/cmodk/go-simpleflake"
 	"github.com/cmodk/phoenix/app"
 	"github.com/gocql/gocql"
@@ -29,6 +30,12 @@ func (devices *Devices) List(c DeviceCriteria) (*[]Device, error) {
 		return nil, err
 	}
 
+	for i, _ := range ds {
+		d := &(ds[i])
+		d.db = devices.db
+		d.ca = devices.ca
+	}
+
 	return &ds, nil
 
 }
@@ -49,13 +56,14 @@ func (devices *Devices) Get(c DeviceCriteria) (*Device, error) {
 }
 
 type Device struct {
-	db      *app.Database
-	ca      *gocql.Session
-	Id      uint64    `db:"id" json:"id"`
-	Guid    string    `db:"guid" json:"guid"`
-	Created time.Time `db:"created" json:"created"`
-	Token   *string   `db:"token" json:"-"`
-	Online  bool      `db:"online" json:"online"`
+	db              *app.Database
+	ca              *gocql.Session
+	Id              uint64     `db:"id" json:"id"`
+	Guid            string     `db:"guid" json:"guid"`
+	Created         time.Time  `db:"created" json:"created"`
+	Token           *string    `db:"token" json:"-"`
+	TokenExpiration *time.Time `db:"token_expiration" json:"token_expiration"`
+	Online          bool       `db:"online" json:"online"`
 }
 
 func (d *Device) UpdateOnlineStatus(status bool) error {
@@ -87,7 +95,10 @@ func (d *Device) NotificationList(c DeviceNotificationCriteria) ([]DeviceNotific
 
 	var notifications []DeviceNotification
 
-	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ?", d.Guid)
+	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ? AND timestamp >= ? AND timestamp <?",
+		d.Guid,
+		c.From,
+		c.To)
 
 	log.Debugf("Executing cassandra query: %s\n", query.String())
 	iter := query.Iter()
@@ -281,7 +292,7 @@ func (d *Device) StreamUpdate(s Stream) error {
 	if current == nil {
 		//Not found
 		s.DeviceId = d.Id
-		return d.db.Insert(s, "device_streams")
+		return d.db.Insert(&s, "device_streams")
 	}
 
 	if current.Timestamp == nil || (s.Timestamp != nil && s.Timestamp.After(*current.Timestamp)) {
@@ -297,6 +308,7 @@ func (d *Device) StreamUpdate(s Stream) error {
 }
 
 func (d *Device) StreamList(c StreamCriteria) (*([]Stream), error) {
+	c.DeviceId = d.Id
 	var streams []Stream
 	if err := d.db.Match(&streams, "device_streams", c); err != nil {
 		return nil, err
@@ -305,6 +317,7 @@ func (d *Device) StreamList(c StreamCriteria) (*([]Stream), error) {
 	return &streams, nil
 }
 func (d *Device) StreamGet(c StreamCriteria) (*Stream, error) {
+	c.DeviceId = d.Id
 	var s Stream
 	if err := d.db.MatchOne(&s, "device_streams", c); err != nil {
 		return nil, err
@@ -323,10 +336,13 @@ type DeviceCriteria struct {
 }
 
 type DeviceNotificationCriteria struct {
-	Limit int `schema:"limit"`
+	From  time.Time `schema:"from"`
+	To    time.Time `schema:"to"`
+	Limit int       `schema:"limit"`
 }
 
 type DeviceCommandCriteria struct {
+	Id       uint64 `schema:"id" db:"id"`
 	DeviceId uint64 `schema:"device_id" db:"device_id"`
 	Pending  bool   `schema:"pending" db:"pending"`
 
@@ -341,7 +357,35 @@ func (d *Device) CommandInsert(command *DeviceCommand) error {
 	command.DeviceId = d.Id
 	command.Pending = true
 
-	return d.db.Insert(*command, "device_commands")
+	return d.db.Insert(command, "device_commands")
+}
+
+func (d *Device) CommandGet(c DeviceCommandCriteria) (*DeviceCommand, error) {
+	c.DeviceId = d.Id
+
+	var command DeviceCommand
+	if err := d.db.MatchOne(&command, "device_commands", c); err != nil {
+		return nil, err
+	}
+
+	return &command, nil
+
+}
+
+func (d *Device) CommandResponse(cmd *DeviceCommand, value interface{}) error {
+	response, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+
+	query, args, err := squirrel.Update("device_commands").Set("response", response).Where(squirrel.Eq{"id": cmd.Id}).ToSql()
+	if err != nil {
+		return err
+	}
+
+	phoenix.Logger.Debugf("Executing: %s -> %v", query, args)
+	_, err = d.db.Exec(query, args...)
+	return err
 }
 
 func (d *Device) CommandSent(cmd *DeviceCommand) error {

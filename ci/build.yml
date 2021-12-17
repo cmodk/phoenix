@@ -1,0 +1,17 @@
+platform: linux
+image_resource:
+  type: registry-image
+  source:
+    # Check out the README for oci-build-task at
+    # https://github.com/concourse/oci-build-task
+    repository: concourse/oci-build-task
+inputs:
+- name: source-code
+
+params:
+  CONTEXT: source-code
+  UNPACK_ROOTFS: "true" # only needed if using image in a future step
+  BUILD_ARG_arg_application: phoenix-devices
+  IMAGE_PLATFORM: linux/arm64,linux/amd64
+run:
+  path: build
