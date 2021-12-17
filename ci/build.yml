@@ -14,6 +14,6 @@ params:
   BUILD_ARG_arg_application: phoenix-devices
   IMAGE_PLATFORM: linux/arm64,linux/amd64
 outputs:
-	- name: image
+  - name: image
 run:
   path: build
