@@ -13,5 +13,7 @@ params:
   UNPACK_ROOTFS: "true" # only needed if using image in a future step
   BUILD_ARG_arg_application: phoenix-devices
   IMAGE_PLATFORM: linux/arm64,linux/amd64
+outputs:
+	- name: image
 run:
   path: build
