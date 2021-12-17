@@ -491,6 +491,11 @@ func (app *App) Post(path string, handler http.HandlerFunc) {
 
 }
 
+func (app *App) PathPrefix(path string, handler http.HandlerFunc) {
+	app.EnableHttp = true
+	app.Router.PathPrefix(path).Handler(handler)
+}
+
 func (app *App) ConnectMariadb() {
 	db, err := sqlx.Connect("mysql", *app.Config.MariaDb)
 	if err != nil {
