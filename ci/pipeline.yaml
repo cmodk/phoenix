@@ -3,19 +3,37 @@ resources:
   type: git
   source: 
     uri: git@github.com:cmodk/phoenix.git
-    branch: master
+    branch: sandbox
     private_key: ((github-cmodk-key.id_rsa))
+
 jobs:
-- name: build
+- name: phoenix-devices
   plan:
   - get: source-code
     trigger: true
   - task: phoenix-devices
     privileged: true
     file: source-code/ci/build.yml
+    vars: {application: phoenix-devices}
   - task: phoenix-mqtt
     privileged: true
     file: source-code/ci/build.yml
+    vars: {application: phoenix-mqtt}
+  - task: phoenix-events
+    privileged: true
+    file: source-code/ci/build.yml
+    vars: {application: phoenix-events}
+  - task: phoenix-samples
+    privileged: true
+    file: source-code/ci/build.yml
+    vars: {application: phoenix-samples}
+  - task: phoenix-helper
+    privileged: true
+    file: source-code/ci/build.yml
+    vars: {application: phoenix-helper}
+
+
+
 
 
 
