@@ -13,32 +13,27 @@ jobs:
     trigger: true
   - task: phoenix-devices
     privileged: true
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          # Check out the README for oci-build-task at
-          # https://github.com/concourse/oci-build-task
-          repository: cmodk/oci-build-task
-      inputs:
-      - name: source-code
-      params:
-        CONTEXT: source-code
-        UNPACK_ROOTFS: "true" # only needed if using image in a future step
-        BUILD_ARG_arg_application: phoenix-devices
-        IMAGE_PLATFORM: linux/amd64,linux/arm64
-        PUSH: type=image,name=docker.io/cmodk/phoenix-devices:((branch)),push=true
-        DOCKER_USERNAME: ((docker.username))
-        DOCKER_PASSWORD: ((docker.password))
-        DOCKER_EMAIL: casper.mogensen@gmail.com
-        DOCKER_REGISTRY: https://index.docker.io/v1/
-        DOCKER_CONFIG: /root/.docker
-      run:
-        path: build
+    file: source-code/ci/build.yml
+    vars: {application: phoenix-devices, branch: ((branch))}
   - task: phoenix-mqtt
     privileged: true
     file: source-code/ci/build.yml
     vars: {application: phoenix-mqtt, branch: ((branch))}
+  - task: phoenix-events
+    privileged: true
+    file: source-code/ci/build.yml
+    vars: {application: phoenix-events, branch: ((branch))}
+  - task: phoenix-samples
+    privileged: true
+    file: source-code/ci/build.yml
+    vars: {application: phoenix-samples, branch: ((branch))}
+  - task: phoenix-helper
+    privileged: true
+    file: source-code/ci/build.yml
+    vars: {application: phoenix-helper, branch: ((branch))}
+
+
+
+
 
 
