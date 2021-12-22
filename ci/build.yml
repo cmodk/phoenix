@@ -12,7 +12,7 @@ params:
   CONTEXT: source-code
   BUILD_ARG_arg_application: ((application))
   IMAGE_PLATFORM: linux/amd64,linux/arm64
-  PUSH: type=image,name=docker.io/cmodk/((application)),push=true
+  PUSH: type=image,name=docker.io/cmodk/((application)):((branch)),push=true
   DOCKER_USERNAME: ((docker.username))
   DOCKER_PASSWORD: ((docker.password))
   DOCKER_REGISTRY: ((docker.registry))
