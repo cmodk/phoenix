@@ -1,40 +1,46 @@
+resource_types:
+- name: git-branches
+  type: registry-image
+  source:
+    repository: aoldershaw/git-branches-resource
 resources:
 - name: source-code
   type: git
+  check_every: 10m
   source: 
     uri: git@github.com:cmodk/phoenix.git
     branch: sandbox
     private_key: ((github-cmodk-key.id_rsa))
+- name: build-branches
+  type: git-branches
+  check_every: 10m
+  source:
+    uri: git@github.com:cmodk/phoenix.git
+    private_key: ((github-cmodk-key.id_rsa))
+    # The "(?P<name>pattern)" syntax defines a named capture group.
+    # aoldershaw/git-branches-resource emits the value of each named capture
+    # group under the `groups` key.
+    #
+    # e.g. feature/some-feature ==> {"groups": {"feature": "some-feature"}}
+    branch_regex: '(?P<build>latest|sandbox)'
+
 
 jobs:
-- name: phoenix-devices
+- name: set-pipelines
   plan:
-  - get: source-code
-    trigger: true
-  - task: phoenix-devices
-    privileged: true
-    file: source-code/ci/build.yml
-    vars: {application: phoenix-devices}
-  - task: phoenix-mqtt
-    privileged: true
-    file: source-code/ci/build.yml
-    vars: {application: phoenix-mqtt}
-  - task: phoenix-events
-    privileged: true
-    file: source-code/ci/build.yml
-    vars: {application: phoenix-events}
-  - task: phoenix-samples
-    privileged: true
-    file: source-code/ci/build.yml
-    vars: {application: phoenix-samples}
-  - task: phoenix-helper
-    privileged: true
-    file: source-code/ci/build.yml
-    vars: {application: phoenix-helper}
-
-
-
-
-
+  - in_parallel:
+    - get: build-branches
+      trigger: true
+    - get: source-code
+      trigger: true
+  - load_var: branches
+    file: build-branches/branches.json
+  - across:
+    - var: branch
+      values: ((.:branches))
+    set_pipeline: phoenix-builds
+    file: source-code/ci/template.yml
+    instance_vars: {branch: ((.:branch.groups.build))}
+    vars: {branch: ((.:branch.name))}
 
   
