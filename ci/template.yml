@@ -1,6 +1,7 @@
 resources:
 - name: source-code
   type: git
+  check_every: 1m
   source: 
     uri: git@github.com:cmodk/phoenix.git
     branch: ((branch))
