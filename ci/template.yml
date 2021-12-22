@@ -39,6 +39,6 @@ jobs:
   - task: phoenix-mqtt
     privileged: true
     file: source-code/ci/build.yml
-    vars: {application: phoenix-mqtt, branch:: ((branch))}
+    vars: {application: phoenix-mqtt, branch: ((branch))}
 
 
