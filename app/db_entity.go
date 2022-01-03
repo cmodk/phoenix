@@ -1,9 +1,5 @@
 package app
 
-import (
-	"fmt"
-)
-
 type DatabaseRepository struct {
 	Table    string
 	Database *Database
