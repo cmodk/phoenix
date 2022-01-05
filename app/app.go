@@ -180,7 +180,6 @@ func (db *Database) Insert(entity interface{}, table string) error {
 	}*/
 
 	ignored_fields := map[string]bool{}
-	log.Debugf("Inserting to table: %s\n", table)
 	query, args, err := squirrel.Insert(table).SetMap(structToQueryMap(entity, ignored_fields)).ToSql()
 	if err != nil {
 		return err
