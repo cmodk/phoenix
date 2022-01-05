@@ -147,7 +147,7 @@ func (db *Database) Match(dst interface{}, table string, criteria Criteria) erro
 		return err
 	}
 
-	db.Logger.WithField("sql", "matchone").Debugf("Executing %s\n", query)
+	db.Logger.WithField("sql", "matchone").Tracef("Executing %s\n", query)
 
 	return db.Select(dst, query, args...)
 
@@ -162,7 +162,7 @@ func (db *Database) MatchOne(dst interface{}, table string, criteria Criteria) e
 		return err
 	}
 
-	db.Logger.WithField("sql", "matchone").Debugf("Executing %s\n", query)
+	db.Logger.WithField("sql", "matchone").Tracef("Executing %s\n", query)
 
 	return db.Get(dst, query, args...)
 
@@ -185,7 +185,7 @@ func (db *Database) Insert(entity interface{}, table string) error {
 	if err != nil {
 		return err
 	}
-	db.Logger.WithField("sql", "insert").Debugf("Executing %s with args %v\n", query, args)
+	db.Logger.WithField("sql", "insert").Tracef("Executing %s with args %v\n", query, args)
 
 	result, err := db.Exec(query, args...)
 	if err != nil {
@@ -241,7 +241,7 @@ func (db *Database) Update(entity interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	db.Logger.WithField("sql", "insert").Debugf("Executing %s with args %v\n", query, args)
+	db.Logger.WithField("sql", "insert").Tracef("Executing %s with args %v\n", query, args)
 
 	result, err := db.Exec(query, args...)
 	if err != nil {
