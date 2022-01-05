@@ -125,7 +125,7 @@ func (db *Database) ParseCriteria(sb *squirrel.SelectBuilder, c Criteria) {
 				default:
 					tag, ok := ft.Tag.Lookup("db")
 					if ok {
-						db.Logger.Debugf("%d: %s %s = %v -> %s\n", i,
+						db.Logger.Tracef("%d: %s %s = %v -> %s\n", i,
 							ft.Name, f.Type(), f.Interface(), ft.Tag.Get("db"))
 						*sb = sb.Where(squirrel.Eq{tag: f.Interface()})
 					}
