@@ -5,6 +5,13 @@ type DatabaseRepository struct {
 	Database *Database
 }
 
+func (app *App) NewDatabaseRepository(table string) *DatabaseRepository {
+	return &DatabaseRepository{
+		Table:    table,
+		Database: app.Database,
+	}
+}
+
 func (repo *DatabaseRepository) List(dst Entity, c Criteria) error {
 
 	err := repo.Database.Match(dst, repo.Table, c)
