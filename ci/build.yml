@@ -16,7 +16,6 @@ params:
   DOCKER_USERNAME: ((docker.username))
   DOCKER_PASSWORD: ((docker.password))
   DOCKER_REGISTRY: ((docker.registry))
-  DOCKER_CONFIG: /root/.docker
 
 run:
   path: build
