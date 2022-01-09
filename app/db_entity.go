@@ -1,5 +1,9 @@
 package app
 
+import (
+	"fmt"
+)
+
 type DatabaseRepository struct {
 	Table    string
 	Database *Database
@@ -54,14 +58,19 @@ func (repo *DatabaseRepository) Create(dst Entity) error {
 
 }
 
-func (repo *DatabaseRepository) Update(dst Entity) error {
-	err := repo.Database.Update(dst, repo.Table)
+func (repo *DatabaseRepository) Update(dst Entity) (bool, error) {
+	rows_affected, err := repo.Database.Update(dst, repo.Table)
 
-	if err != nil {
-		return err
+	row_updated := false
+	if rows_affected == 1 {
+		row_updated = true
 	}
 
-	return nil
+	if rows_affected > 1 {
+		return false, fmt.Errorf("More than 1 row updated, %d rows updated", rows_affected)
+	}
+
+	return row_updated, err
 
 }
 
