@@ -217,9 +217,13 @@ func (db *Database) Insert(entity interface{}, table string) error {
 }
 
 func (db *Database) Update(entity interface{}, table string) (int64, error) {
+	values := reflect.ValueOf(entity)
+	if values.Kind() == reflect.Ptr {
+		values = values.Elem()
+	}
 
 	//Get Id
-	id := reflect.ValueOf(entity).FieldByName("Id").Uint()
+	id := values.FieldByName("Id").Uint()
 
 	ignored_fields := map[string]bool{
 		"Id": true,
