@@ -216,16 +216,7 @@ func (db *Database) Insert(entity interface{}, table string) error {
 	return nil
 }
 
-func (db *Database) Update(entity interface{}) (int64, error) {
-	f, ok := reflect.TypeOf(entity).FieldByName("Id")
-	if !ok {
-		return 0, fmt.Errorf("Entity has no Id: %s\n", getEventId(entity))
-	}
-
-	table := f.Tag.Get("table")
-	if table == "" {
-		return 0, fmt.Errorf("Missing table tag for entity: %s\n", getEventId(entity))
-	}
+func (db *Database) Update(entity interface{}, table string) (int64, error) {
 
 	//Get Id
 	id := reflect.ValueOf(entity).FieldByName("Id").Uint()
