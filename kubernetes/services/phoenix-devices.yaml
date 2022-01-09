@@ -16,7 +16,9 @@ spec:
     spec:
       containers:
       - name: phoenix-devices
-        image: eu.gcr.io/ae101-197818/sandbox/phoenix-devices
+        image: cmodk/phoenix-devices:sandbox
+        command: ["./phoenix-devices"]
+        args: ['-certificate-expiration=14d']
         env:
         - name: PHOENIX_ENV
           value: "k8s"
@@ -37,8 +39,6 @@ spec:
       - name: phoenix-certificates
         secret:
           secretName: phoenix-certificates
-      imagePullSecrets:
-      - name:  gcr-json-key
 
 ---
 apiVersion: v1

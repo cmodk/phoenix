@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: phoenix-events
-        image: eu.gcr.io/ae101-197818/sandbox/phoenix-events
+        image: cmodk/phoenix-events:sandbox
         env:
         - name: PHOENIX_ENV
           value: "k8s"
@@ -29,8 +29,6 @@ spec:
       - name: phoenix-config
         secret:
           secretName: phoenix-config
-      imagePullSecrets:
-      - name:  gcr-json-key
 
 ---
 apiVersion: v1

@@ -21,7 +21,7 @@ func (repo *DatabaseRepository) List(dst Entity, c Criteria) error {
 	}
 
 	if HasPopulate(c) {
-		dst.Populate()
+		return dst.Populate()
 	}
 
 	return nil
@@ -36,7 +36,7 @@ func (repo *DatabaseRepository) Get(dst Entity, c Criteria) error {
 	}
 
 	if HasPopulate(c) {
-		dst.Populate()
+		return dst.Populate()
 	}
 
 	return nil
@@ -45,6 +45,17 @@ func (repo *DatabaseRepository) Get(dst Entity, c Criteria) error {
 
 func (repo *DatabaseRepository) Create(dst Entity) error {
 	err := repo.Database.Insert(dst, repo.Table)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+func (repo *DatabaseRepository) Update(dst Entity) error {
+	err := repo.Database.Update(dst, repo.Table)
 
 	if err != nil {
 		return err

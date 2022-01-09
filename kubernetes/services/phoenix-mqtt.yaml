@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: phoenix-mqtt
-        image: eu.gcr.io/ae101-197818/sandbox/phoenix-mqtt
+        image: cmodk/phoenix-mqtt:sandbox
         env:
         - name: PHOENIX_ENV
           value: "k8s"
@@ -38,8 +38,6 @@ spec:
       - name: phoenix-certificates
         secret:
           secretName: phoenix-certificates
-      imagePullSecrets:
-      - name:  gcr-json-key
 
 ---
 apiVersion: v1

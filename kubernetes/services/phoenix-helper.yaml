@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: phoenix-helper
-        image: eu.gcr.io/ae101-197818/sandbox/phoenix-helper
+        image: cmodk/phoenix-helper:sandbox
         env:
         - name: PHOENIX_ENV
           value: "k8s"
@@ -29,6 +29,4 @@ spec:
       - name: phoenix-config
         secret:
           secretName: phoenix-config
-      imagePullSecrets:
-      - name:  gcr-json-key
 
