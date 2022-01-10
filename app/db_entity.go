@@ -77,3 +77,5 @@ func (repo *DatabaseRepository) Update(dst Entity) (bool, error) {
 type Entity interface {
 	Populate() error
 }
+
+type EntityIsNull bool

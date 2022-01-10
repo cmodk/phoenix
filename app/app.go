@@ -117,21 +117,33 @@ func (db *Database) ParseCriteria(sb *squirrel.SelectBuilder, c Criteria) {
 
 		} else {
 			ft := typeOfT.Field(i)
-			if !f.IsZero() && f.Kind() != reflect.Struct && f.Kind() != reflect.Slice {
-
-				switch ft.Name {
-				case "Limit":
-					*sb = sb.Limit(uint64(f.Interface().(int)))
-				default:
+			if f.Type() == reflect.TypeOf(EntityIsNull(false)) {
+				if f.Bool() == true {
 					tag, ok := ft.Tag.Lookup("db")
 					if ok {
-						db.Logger.Tracef("%d: %s %s = %v -> %s\n", i,
-							ft.Name, f.Type(), f.Interface(), ft.Tag.Get("db"))
-						*sb = sb.Where(squirrel.Eq{tag: f.Interface()})
+						*sb = sb.Where(squirrel.Eq{tag: nil})
+					} else {
+						db.Logger.Warning("Missing db tag for entity: %s", ft.Name)
+					}
+				}
+
+			} else {
+				if !f.IsZero() && f.Kind() != reflect.Struct && f.Kind() != reflect.Slice {
+
+					switch ft.Name {
+					case "Limit":
+						*sb = sb.Limit(uint64(f.Interface().(int)))
+					default:
+						tag, ok := ft.Tag.Lookup("db")
+						if ok {
+							db.Logger.Tracef("%d: %s %s = %v -> %s\n", i,
+								ft.Name, f.Type(), f.Interface(), ft.Tag.Get("db"))
+							*sb = sb.Where(squirrel.Eq{tag: f.Interface()})
+						}
+
 					}
 
 				}
-
 			}
 		}
 
