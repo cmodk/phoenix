@@ -497,6 +497,18 @@ func (app *App) Post(path string, handler http.HandlerFunc) {
 
 }
 
+func (app *App) Put(path string, handler http.HandlerFunc) {
+	app.EnableHttp = true
+	app.Router.HandleFunc(path, handler).Methods("PUT")
+
+}
+
+func (app *App) Delete(path string, handler http.HandlerFunc) {
+	app.EnableHttp = true
+	app.Router.HandleFunc(path, handler).Methods("DELETE")
+
+}
+
 func (app *App) PathPrefix(path string, handler http.HandlerFunc) {
 	app.EnableHttp = true
 	app.Router.PathPrefix(path).Handler(handler)
