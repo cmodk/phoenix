@@ -133,6 +133,10 @@ func (db *Database) ParseCriteria(sb *squirrel.SelectBuilder, c Criteria) {
 					switch ft.Name {
 					case "Limit":
 						*sb = sb.Limit(uint64(f.Interface().(int)))
+					case "Offset":
+						*sb = sb.Offset(uint64(f.Interface().(int)))
+					case "OrderBy":
+						*sb = sb.OrderBy(f.Interface().(string))
 					default:
 						tag, ok := ft.Tag.Lookup("db")
 						if ok {
