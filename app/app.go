@@ -262,6 +262,35 @@ func (db *Database) Update(entity interface{}, table string) (int64, error) {
 
 }
 
+func (db *Database) Delete(entity interface{}, table string) (int64, error) {
+	values := reflect.ValueOf(entity)
+	if values.Kind() == reflect.Ptr {
+		values = values.Elem()
+	}
+
+	//Get Id
+	idValue := values.FieldByName("Id")
+	if idValue.IsZero() {
+		return 0, fmt.Errorf("Missing id for entity: %s", table)
+	}
+
+	id := idValue.Uint()
+
+	query, args, err := squirrel.Delete(table).Where(squirrel.Eq{"id": id}).ToSql()
+	if err != nil {
+		return 0, err
+	}
+	db.Logger.WithField("sql", "delete").Tracef("Executing %s with args %v\n", query, args)
+
+	result, err := db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected()
+
+}
+
 func structToQueryMap(s interface{}, ignore map[string]bool) map[string]interface{} {
 	m := make(map[string]interface{})
 	t := reflect.TypeOf(s)

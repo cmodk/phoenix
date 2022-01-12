@@ -74,6 +74,20 @@ func (repo *DatabaseRepository) Update(dst Entity) (bool, error) {
 
 }
 
+func (repo *DatabaseRepository) Delete(dst Entity) error {
+	rows_affected, err := repo.Database.Delete(dst, repo.Table)
+
+	if rows_affected == 0 {
+		return fmt.Errorf("Entity not found")
+	}
+
+	if rows_affected > 1 {
+		return fmt.Errorf("MORE THAN 1 ROW DELETED")
+	}
+
+	return err
+}
+
 type Entity interface {
 	Populate() error
 }
