@@ -27,7 +27,7 @@ func (bus *CommandBus) Handle(command interface{}, handler CommandHandler) {
 
 func (bus *CommandBus) Listen() {
 
-	log.Printf("Listening for commands\n")
+	log.Debugf("Listening for commands\n")
 
 	for {
 		cmd := <-bus.queue

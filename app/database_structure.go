@@ -37,10 +37,10 @@ func (app *App) CheckAndUpdateDatabase(database_structure []string) error {
 
 	}
 
-	log.Printf("Current database version: %d", current_version)
+	log.Debugf("Current database version: %d", current_version)
 
 	for i := current_version + 1; i < len(database_structure); i++ {
-		log.Printf("Executing: %s\n", database_structure[i])
+		log.Debugf("Executing: %s\n", database_structure[i])
 		_, err := db.Exec(database_structure[i])
 		if err != nil {
 			return err
@@ -53,7 +53,7 @@ func (app *App) CheckAndUpdateDatabase(database_structure []string) error {
 		}
 	}
 
-	log.Printf("Current database version: %d", current_version)
+	log.Debugf("Current database version: %d", current_version)
 
 	return nil
 }

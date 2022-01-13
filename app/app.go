@@ -350,7 +350,7 @@ func New() *App {
 
 	log = logrus.New()
 
-	log.Printf("Running in environment: %s\n", env)
+	log.Debugf("Running in environment: %s\n", env)
 	config, err := LoadConfig(env)
 	if err != nil {
 		panic(err)
@@ -375,7 +375,7 @@ func New() *App {
 		panic(err)
 	}
 
-	log.Printf("Using log level %s\n", app.Logger.Level.String())
+	log.Debugf("Using log level %s\n", app.Logger.Level.String())
 
 	app.Command = NewCommandBus(app)
 	app.Event = NewEventBus(app)
@@ -432,7 +432,7 @@ func (app *App) Run() {
 	app.Negroni.UseHandler(app.Router)
 
 	go app.Command.Listen()
-	log.Printf("Running application\n")
+	log.Debugf("Running application\n")
 
 	app.Http = &http.Server{
 		Handler:      app.Negroni,
@@ -444,7 +444,7 @@ func (app *App) Run() {
 		if app.UseTLS {
 			log.Fatal(app.Http.ListenAndServeTLS(*http_tls_certificate, *http_tls_key))
 		} else {
-			app.Logger.Info("Listening for http connections")
+			app.Logger.Debug("Listening for http connections")
 			log.Fatal(app.Http.ListenAndServe())
 		}
 
@@ -457,7 +457,7 @@ func (app *App) Run() {
 }
 
 func (app *App) LoadCertificates(load_private_key bool) error {
-	log.Printf("Loading certificates\n")
+	log.Debugf("Loading certificates\n")
 	caPublicKeyFile, err := ioutil.ReadFile(app.CertificatePath + "/server.pem")
 	if err != nil {
 		return err

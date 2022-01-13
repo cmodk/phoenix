@@ -88,9 +88,9 @@ func (bus *EventBus) Listen() {
 		panic(fmt.Errorf("Missing config for eventbus\n"))
 	}
 	for k, handlers := range bus.handlers {
-		log.Printf("%s has %d handlers registered\n", k, len(handlers))
+		log.Debugf("%s has %d handlers registered\n", k, len(handlers))
 		for _, h := range handlers {
-			log.Printf("  Type: %s\n", h.t.String())
+			log.Debugf("  Type: %s\n", h.t.String())
 		}
 	}
 
