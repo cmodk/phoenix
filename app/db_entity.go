@@ -93,3 +93,4 @@ type Entity interface {
 }
 
 type EntityIsNull bool
+type EntityIntIsNot int

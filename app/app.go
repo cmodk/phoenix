@@ -134,6 +134,8 @@ func (db *Database) ParseCriteria(sb *squirrel.SelectBuilder, c Criteria) {
 							if f.Bool() == true {
 								*sb = sb.Where(squirrel.Eq{tag: nil})
 							}
+						case reflect.TypeOf(EntityIntIsNot(0)):
+							*sb = sb.Where(squirrel.NotEq{tag: f.Interface()})
 						default:
 							db.Logger.Tracef("%d: %s %s = %v -> %s\n", i,
 								ft.Name, f.Type(), f.Interface(), ft.Tag.Get("db"))
