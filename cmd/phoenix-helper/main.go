@@ -318,7 +318,9 @@ func deviceSampleScheduleAverage() error {
 
 	for current.Before(to) {
 		for average_key, _ := range phoenix.AverageConfigs {
-			phoenix.ScheduleCalculation(ph.Redis, ctx, current, average_key, *device_guid, *stream)
+			if average_key != "minute" {
+				phoenix.ScheduleCalculation(ph.Redis, ctx, current, average_key, *device_guid, *stream)
+			}
 
 		}
 
