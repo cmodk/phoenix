@@ -314,6 +314,31 @@ func deviceSampleScheduleAverage() error {
 		}
 	}
 
+	d, err := ph.Devices.Get(phoenix.DeviceCriteria{
+		Guid: *device_guid,
+	})
+	if err != nil {
+		log.Error("Device not found")
+		return err
+	}
+
+	streams, err := d.StreamList(phoenix.StreamCriteria{})
+	if err != nil {
+		return err
+	}
+
+	stream_exists := false
+	for _, s := range *streams {
+		if s.Code == *stream {
+			stream_exists = true
+			break
+		}
+	}
+
+	if stream_exists == false {
+		return fmt.Errorf("Stream does not exists for device")
+	}
+
 	current := from
 
 	for current.Before(to) {
