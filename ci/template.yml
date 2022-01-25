@@ -11,29 +11,40 @@ jobs:
   plan:
   - get: source-code
     trigger: true
-  - task: phoenix-devices
+  - task: create-ssh-key
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source: 
+          repository: busybox
+      run:
+        path: sh
+        args: 
+        - -exc
+        - echo "((github-cmodk-key.id_rsa))" > ./github-key/github.id_rsa
+      outputs:
+        - name: github-key
+  - task: phoenix-image
     privileged: true
-    file: source-code/ci/build.yml
-    vars: {application: phoenix-devices, branch: ((branch))}
-  - task: phoenix-mqtt
-    privileged: true
-    file: source-code/ci/build.yml
-    vars: {application: phoenix-mqtt, branch: ((branch))}
-  - task: phoenix-events
-    privileged: true
-    file: source-code/ci/build.yml
-    vars: {application: phoenix-events, branch: ((branch))}
-  - task: phoenix-samples
-    privileged: true
-    file: source-code/ci/build.yml
-    vars: {application: phoenix-samples, branch: ((branch))}
-  - task: phoenix-helper
-    privileged: true
-    file: source-code/ci/build.yml
-    vars: {application: phoenix-helper, branch: ((branch))}
-
-
-
-
-
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: cmodk/oci-build-task
+      inputs:
+      - name: source-code
+      - name: github-key
+      params:
+        CONTEXT: source-code
+        IMAGE_PLATFORM: linux/amd64,linux/arm64
+        PUSH: docker.io/cmodk/phoenix:((branch))
+        DOCKER_USERNAME: ((docker.username))
+        DOCKER_PASSWORD: ((docker.password))
+        DOCKER_REGISTRY: ((docker.registry))
+        BUILDKIT_SSH: github_ssh_key=./github-key/github.id_rsa
+        BUILDKIT_SECRET_github_ssh_key: ./github-key/github.id_rsa
+      run:
+        path: build
 
