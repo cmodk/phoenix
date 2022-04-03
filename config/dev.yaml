@@ -2,6 +2,7 @@ LogLevel: "info"
 MariaDB: "root:123@(localhost:3306)/phoenix?parseTime=true"
 NsqTopic: "phoenix.events"
 Nsqd: "127.0.0.1:4150"
+NsqLookupd: "127.0.0.1:4161"
 Cassandra:
   Nodes: "127.0.0.1:9042"
 EventBus:

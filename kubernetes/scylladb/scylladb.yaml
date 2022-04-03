@@ -32,6 +32,8 @@ spec:
               name: jmx
             - containerPort: 9042
               name: cql
+            - containerPort: 9180
+              name: metrics
           resources:
             limits:
               cpu: 200m
@@ -149,5 +151,10 @@ spec:
     - port: 9042
       targetPort: 9042
       nodePort: 32042
+      name: cql
+    - port: 9180
+      targetPort: 9180
+      nodePort: 31080
+      name: metrics
   selector:
     app: scylladb
