@@ -137,12 +137,28 @@ func cassandraCreateKeyspace() error {
 	keyspace := "phoenix"
 	replication := 1
 
-	return session.Query(fmt.Sprintf(`CREATE KEYSPACE %s
+	err = session.Query(fmt.Sprintf(`CREATE KEYSPACE %s
     WITH replication = {
               'class' : 'SimpleStrategy',
 	              'replication_factor' : %d
 		          }`, keyspace, replication)).Exec()
+	if err != nil {
+		return err
+	}
 
+	if err := cassandraCreateNotificationTable(); err != nil {
+		return err
+	}
+
+	if err := cassandraCreateSampleTable(); err != nil {
+		return err
+	}
+
+	if err := cassandraCreateStreamStringTable(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func cassandraCreateNotificationTable() error {
