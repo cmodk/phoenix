@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: phoenix
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'git@github.com:cmodk/phoenix.git'
+    path: kubernetes/services
+    targetRevision: HEAD
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: phoenix-sandbox
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
