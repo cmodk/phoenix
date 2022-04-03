@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: 'git@github.com:cmodk/phoenix.git'
     path: kubernetes/services
-    targetRevision: HEAD
+    targetRevision: sandbox
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: phoenix-sandbox
