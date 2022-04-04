@@ -61,14 +61,17 @@ spec:
   ports:
   - port: 3080
     targetPort: 3080
+    nodePort: 31080
     name: lb-http
   - port: 3443
     targetPort: 3443
+    nodePort: 31443
     name: lb-https
   - port: 8883
     targetPort: 8883
+    nodePort: 31883
     name: lb-mqtts
-  type: LoadBalancer
+  type: NodePort
 
 ---
 apiVersion: cert-manager.io/v1
