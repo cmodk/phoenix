@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nsq
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'git@github.com:cmodk/phoenix.git'
+    path: kubernetes/nsq
+    targetRevision: sandbox
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: nsq
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
