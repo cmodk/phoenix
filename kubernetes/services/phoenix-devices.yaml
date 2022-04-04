@@ -16,9 +16,9 @@ spec:
     spec:
       containers:
       - name: phoenix-devices
-        image: cmodk/phoenix-devices:sandbox
+        image: cmodk/phoenix:sandbox
         command: ["./phoenix-devices"]
-        args: ['-certificate-expiration=14d']
+        args: ['-certificate-expiration=24h']
         env:
         - name: PHOENIX_ENV
           value: "k8s"

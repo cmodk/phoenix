@@ -5,7 +5,7 @@ metadata:
  labels:
    app: phoenix-events
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: phoenix-events
@@ -16,7 +16,8 @@ spec:
     spec:
       containers:
       - name: phoenix-events
-        image: cmodk/phoenix-events:sandbox
+        image: cmodk/phoenix:sandbox
+        command: ["./phoenix-events"]
         env:
         - name: PHOENIX_ENV
           value: "k8s"

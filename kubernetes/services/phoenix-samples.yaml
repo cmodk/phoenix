@@ -16,7 +16,8 @@ spec:
     spec:
       containers:
       - name: phoenix-samples
-        image: cmodk/phoenix-samples:sandbox
+        image: cmodk/phoenix:sandbox
+        command: ["./phoenix-samples"]
         env:
         - name: PHOENIX_ENV
           value: "k8s"
