@@ -18,7 +18,8 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/go-redis/redis/v8 v8.10.0
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/gocql/gocql v0.0.0-20210515062232-b7ef815b4556
+	github.com/gocql/gocql v1.0.0
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
 	github.com/heroku/docker-registry-client v0.0.0-20190909225348-afc9e1acc3d5
