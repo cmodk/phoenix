@@ -27,6 +27,7 @@ spec:
         - name: phoenix-config
           mountPath: "/usr/local/share/phoenix/config"
           readOnly: true
+        imagePullPolicy: Always
       restartPolicy: Always
       volumes:
       - name: phoenix-config

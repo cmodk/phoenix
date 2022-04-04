@@ -33,6 +33,7 @@ spec:
           readOnly: true
         ports:
           - containerPort: 8883
+        imagePullPolicy: Always
       restartPolicy: Always
       volumes:
       - name: phoenix-config
