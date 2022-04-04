@@ -39,7 +39,7 @@ func (a Auth) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.Handle
 			email = r.Header["X-Grafana-User"][0]
 
 			var user User
-			if err := a.App.Database.Get(&user, "SELECT id,email,token_type FROM users WHERE email = ?", email); err != nil {
+			if err := a.App.Database.Get(&user, "SELECT id,email,auth_type FROM users WHERE email = ?", email); err != nil {
 				if err == sql.ErrNoRows {
 					http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				} else {
