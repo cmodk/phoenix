@@ -152,7 +152,7 @@ func deviceNotificationPostHandler(w http.ResponseWriter, r *http.Request, d *ph
 		return
 	}
 
-	if d.TokenExpiration.Before(time.Now()) {
+	if d.TokenExpiration == nil || d.TokenExpiration.Before(time.Now()) {
 		err := fmt.Errorf("Token expired")
 		app.Logger.WithField("device", d).WithField("error", err).Error(err)
 		app.HttpUnauthorized(w, err)
