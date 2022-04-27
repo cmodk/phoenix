@@ -37,6 +37,20 @@ type SampleCriteria struct {
 	Limit int `schema:"limit,omitempty"`
 }
 
+type Samples []Sample
+
+func (samples Samples) Len() int {
+	return len(samples)
+}
+
+func (samples Samples) Swap(i int, j int) {
+	samples[i], samples[j] = samples[j], samples[i]
+}
+
+func (samples Samples) Less(i int, j int) bool {
+	return samples[i].Timestamp.After(samples[j].Timestamp)
+}
+
 type StreamStringValue struct {
 	Timestamp time.Time `json:"timestamp"`
 	Value     string    `json:"value"`
