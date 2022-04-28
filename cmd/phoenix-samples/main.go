@@ -152,7 +152,8 @@ func handleRedis() {
 					sample_count)
 
 				if err := insert.Exec(); err != nil {
-					lg.WithField("error", err).Errorf("Error inserting aggregated sample")
+					lg.WithField("error", err).Errorf("Error inserting aggregated sample - MUST NOT HAPPEN!")
+					panic(err)
 				}
 			} else {
 				lg.WithField("exp", exp).Debugf("Skipping average, count =0")

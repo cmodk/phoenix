@@ -88,7 +88,13 @@ func (d *Device) NotificationInsert(n *DeviceNotification) error {
 		n.Notification,
 		n.Parameters)
 
-	return query.Exec()
+	if err := query.Exec(); err != nil {
+		//Must not happen!
+		log.WithField("error", err).Error("Could not insert device notification")
+		panic(err)
+	}
+
+	return nil
 }
 
 func (d *Device) NotificationList(c DeviceNotificationCriteria) ([]DeviceNotification, error) {
