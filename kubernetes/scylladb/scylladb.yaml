@@ -36,11 +36,11 @@ spec:
               name: metrics
           resources:
             limits:
-              cpu: 200m
-              memory: 256M
+              cpu: 1000m
+              memory: 1024M
             requests:
-              cpu: 200m
-              memory: 256M
+              cpu: 1000m
+              memory: 1024M
           securityContext:
             capabilities:
               add:
