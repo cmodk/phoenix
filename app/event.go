@@ -110,6 +110,8 @@ func (bus *EventBus) Listen() {
 	// See also AddConcurrentHandlers.
 	consumer.AddConcurrentHandlers(bus, bus.config.NumHandlers)
 
+	consumer.SetLoggerLevel(nsq.LogLevelWarning)
+
 	// Use nsqlookupd to discover nsqd instances.
 	// See also ConnectToNSQD, ConnectToNSQDs, ConnectToNSQLookupds.
 	err = consumer.ConnectToNSQLookupd(*bus.app.Config.NsqLookupd)
