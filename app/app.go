@@ -336,6 +336,7 @@ type Config struct {
 	Redis      *string          `yaml:"Redis"`
 	Cassandra  *CassandraConfig `yaml:"Cassandra"`
 	EventBus   *EventBusConfig  `yaml:"EventBus"`
+	Azure      *Azure           `yaml:"Azure"`
 }
 
 func New() *App {

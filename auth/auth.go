@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto/rsa"
 	"database/sql"
 	//	"encoding/base64"
 	"encoding/json"
@@ -12,6 +13,10 @@ import (
 
 	"github.com/cmodk/go-simplehttp"
 	pa "github.com/cmodk/phoenix/app"
+
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/lestrrat-go/jwx/jwk"
 )
 
 type Auth struct {
@@ -60,7 +65,7 @@ func (a Auth) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.Handle
 			}
 
 			if user.AuthType == "azure" && a.CheckAzureAccessToken(bearer, email) {
-				a.App.Logger.Printf("Found azure user: %s\n", email)
+				a.App.Logger.Debugf("Found azure user: %s\n", email)
 
 				ctx := context.WithValue(context.Background(), "user", user)
 
@@ -145,20 +150,41 @@ func (a Auth) CheckAzureAccessToken(bearer string, email string) bool {
 
 	azure_auth.SetBearerAuth(bearer)
 
-	data, err := azure_auth.Get("/userinfo")
-	if err != nil {
-		a.App.Logger.WithField("error", err).Error("Error getting userinfo")
+	jwtB64 := bearer
+
+	keySet, err := jwk.Fetch(context.Background(), "https://login.microsoftonline.com/"+a.App.Config.Azure.Tenant+"/discovery/v2.0/keys")
+
+	token, err := jwt.Parse(jwtB64, func(token *jwt.Token) (interface{}, error) {
+		if token.Method.Alg() != jwa.RS256.String() {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		kid, ok := token.Header["kid"].(string)
+		if !ok {
+			return nil, fmt.Errorf("kid header not found")
+		}
+
+		keys, ok := keySet.LookupKeyID(kid)
+		if !ok {
+			return nil, fmt.Errorf("key %v not found", kid)
+		}
+
+		publickey := &rsa.PublicKey{}
+		err = keys.Raw(publickey)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse pubkey")
+		}
+
+		return publickey, nil
+	})
+
+	// Check if the token is valid.
+	if !token.Valid {
+		a.App.Logger.Errorf("The token is not valid.")
 		return false
 	}
+	a.App.Logger.Debugf("The token is valid.")
 
-	var token AzureIdToken
-
-	if err := json.Unmarshal([]byte(data), &token); err != nil {
-		a.App.Logger.WithField("error", err).Error("Error unmarshalling google token")
-		return false
-	}
-
-	return token.Email == email
+	return token.Valid
 
 }
 
