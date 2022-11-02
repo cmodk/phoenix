@@ -34,6 +34,13 @@ func updateLastKnownValue(event interface{}) error {
 		stream.Timestamp = &e.Timestamp
 	}
 
+	if stream.Timestamp.Unix() < 0 {
+		log.Errorf("Timestamp is not valid: %s\n", stream.Timestamp.Format(time.RFC3339))
+
+		//Ignore this for now, nothing to do and nsq will just requeue...
+		return nil
+	}
+
 	if err := d.StreamUpdate(stream); err != nil {
 		return err
 	}
