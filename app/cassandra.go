@@ -14,8 +14,8 @@ type CassandraConfig struct {
 func ConnectCassandra(config CassandraConfig) (*gocql.Session, error) {
 	cluster := gocql.NewCluster(config.Nodes)
 	cluster.Keyspace = "phoenix"
-	cluster.Timeout = 10 * time.Second
-	cluster.ConnectTimeout = 10 * time.Second
+	cluster.Timeout = 120 * time.Second
+	cluster.ConnectTimeout = 120 * time.Second
 	if config.Consistency != nil {
 		cluster.Consistency = gocql.ParseConsistency(*config.Consistency)
 	} else {
