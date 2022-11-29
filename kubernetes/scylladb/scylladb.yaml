@@ -20,7 +20,7 @@ spec:
         kubernetes.io/arch: amd64
       containers:
         - name: scylladb
-          image: scylladb/scylla:4.6.3
+          image: scylladb/scylla:4.6.10
           imagePullPolicy: IfNotPresent
           args: ["--seeds", "scylladb-0.scylladb.scylladb.svc.cluster.local"]
           ports:
