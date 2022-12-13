@@ -15,8 +15,6 @@ spec:
       labels:
         app: phoenix-mqtt
     spec:
-      nodeSelector:
-        beta.kubernetes.io/arch: arm64
       containers:
       - name: phoenix-mqtt
         image: cmodk/phoenix:sandbox

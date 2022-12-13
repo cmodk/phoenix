@@ -14,8 +14,6 @@ spec:
       labels:
         app: phoenix-helper
     spec:
-      nodeSelector:
-        beta.kubernetes.io/arch: arm64
       containers:
       - name: phoenix-helper
         image: cmodk/phoenix:sandbox
