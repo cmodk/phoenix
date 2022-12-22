@@ -73,7 +73,7 @@ func splitBatchNotifications(event interface{}) error {
 			now := time.Now()
 			s.Timestamp = &now
 		}
-		log.WithField("stream", s).Infof("Code: %s, Value: %f, Timestamp: %s",
+		log.WithField("stream", s).Debugf("Code: %s, Value: %f, Timestamp: %s",
 			s.Code,
 			s.Value,
 			s.Timestamp)
