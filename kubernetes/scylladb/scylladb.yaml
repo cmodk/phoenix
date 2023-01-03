@@ -16,8 +16,16 @@ spec:
       labels:
         app: scylladb
     spec:
-      nodeSelector:
-        kubernetes.io/arch: amd64
+			affinity:
+				nodeAffinity:
+					requiredDuringSchedulingIgnoredDuringExecution:
+						nodeSelectorTerms:
+						- matchExpressions:
+							- key: kubernetes.io/arch
+								operator: In
+								values:
+								- amd64
+								- arm64
       containers:
         - name: scylladb
           image: scylladb/scylla:5.0.5
