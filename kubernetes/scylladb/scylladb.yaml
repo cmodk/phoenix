@@ -42,13 +42,6 @@ spec:
               name: cql
             - containerPort: 9180
               name: metrics
-          resources:
-            limits:
-              cpu: 1000m
-              memory: 1024M
-            requests:
-              cpu: 1000m
-              memory: 1024M
           securityContext:
             capabilities:
               add:
