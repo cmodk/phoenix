@@ -38,7 +38,7 @@ func main() {
 	if *debug {
 		app.Logger.Level = logrus.DebugLevel
 	} else {
-		app.Logger.Level = logrus.WarnLevel
+		app.Logger.Level = logrus.InfoLevel
 	}
 
 	if *no_tls == false {
