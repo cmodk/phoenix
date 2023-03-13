@@ -2,7 +2,7 @@ resource_types:
 - name: git-branches
   type: registry-image
   source:
-    repository: aoldershaw/git-branches-resource
+    repository: registry.hub.docker.com/aoldershaw/git-branches-resource
 resources:
 - name: source-code
   type: git
