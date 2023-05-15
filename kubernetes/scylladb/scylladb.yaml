@@ -28,7 +28,7 @@ spec:
                 - arm64
       containers:
         - name: scylladb
-          image: scylladb/scylla:5.1.8
+          image: scylladb/scylla:5.2.0
           imagePullPolicy: IfNotPresent
           args: ["--seeds", "scylladb-0.scylladb.scylladb.svc.cluster.local"]
           ports:
