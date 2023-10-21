@@ -88,11 +88,13 @@ func ScheduleCalculation(re *redis.Client, ctx context.Context, sampleTime time.
 		//Add(average_config.ScheduleTime).
 		Add(average_config.ScheduleTime)
 
-	phoenix.Logger.Infof("%s: now: %s -> %s -> %s\n",
+	phoenix.Logger.Infof("%s: now: %s:%s -> %s -> %s: %s\n",
 		averageKey,
+		sampleTime,
 		calculationTime.Format(time.RFC3339),
 		time.Now().Format(time.RFC3339),
-		schedulation_time.Format(time.RFC3339))
+		schedulation_time.Format(time.RFC3339),
+		key)
 
 	z := redis.Z{
 		Score:  float64(schedulation_time.Unix()),
