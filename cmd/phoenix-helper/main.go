@@ -364,15 +364,14 @@ func deviceSampleScheduleAverage() error {
 		return fmt.Errorf("Stream does not exists for device")
 	}
 
-	current := from
-
 	for average_key, average_config := range phoenix.AverageConfigs {
 		if average_key != "minute" {
+			log.Infof("Scheduling average calculations for %s\n", average_key)
+			current := from
 			for current.Before(to) {
 				phoenix.ScheduleCalculation(ph.Redis, ctx, current, average_key, *device_guid, *stream)
+				current = current.Add(average_config.Duration)
 			}
-
-			current = current.Add(average_config.Duration)
 		}
 	}
 
