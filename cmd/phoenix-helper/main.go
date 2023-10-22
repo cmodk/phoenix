@@ -142,15 +142,24 @@ func cassandraCreateKeyspace() error {
               'class' : 'SimpleStrategy',
 	              'replication_factor' : %d
 		          }`, keyspace, replication)).Exec()
+
 	if err != nil {
 		return err
 	}
+
+	/* Keyspace created, now phoenix can be instanciated */
+	ph = phoenix.New()
+	lg = ph.Logger
 
 	if err := cassandraCreateNotificationTable(); err != nil {
 		return err
 	}
 
 	if err := cassandraCreateSampleTable(); err != nil {
+		return err
+	}
+
+	if err := cassandraCreateSampleAggregatedTables(); err != nil {
 		return err
 	}
 
