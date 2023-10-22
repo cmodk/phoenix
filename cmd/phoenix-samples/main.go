@@ -45,7 +45,7 @@ func sampleSaved(event interface{}) error {
 	e := event.(phoenix.SampleSaved)
 
 	for average_key, _ := range phoenix.AverageConfigs {
-		phoenix.ScheduleCalculation(re, ctx, e.Timestamp, average_key, e.Device, e.Stream)
+		phoenix.ScheduleCalculation(re, ctx, e.Timestamp, average_key, e.Device, e.Stream, false)
 	}
 
 	return nil

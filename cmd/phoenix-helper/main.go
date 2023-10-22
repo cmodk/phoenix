@@ -369,7 +369,7 @@ func deviceSampleScheduleAverage() error {
 			log.Infof("Scheduling average calculations for %s\n", average_key)
 			current := from
 			for current.Before(to) {
-				phoenix.ScheduleCalculation(ph.Redis, ctx, current, average_key, *device_guid, *stream)
+				phoenix.ScheduleCalculation(ph.Redis, ctx, current, average_key, *device_guid, *stream, true)
 				current = current.Add(average_config.Duration)
 			}
 		}

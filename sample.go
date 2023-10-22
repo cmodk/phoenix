@@ -73,7 +73,7 @@ func FrequencyToDuration(frequency string) time.Duration {
 	return AverageConfigs[frequency].Duration
 }
 
-func ScheduleCalculation(re *redis.Client, ctx context.Context, sampleTime time.Time, averageKey string, deviceGuid string, stream string) error {
+func ScheduleCalculation(re *redis.Client, ctx context.Context, sampleTime time.Time, averageKey string, deviceGuid string, stream string, schedule_now bool) error {
 	average_config, ok := AverageConfigs[averageKey]
 	if !ok {
 		return fmt.Errorf("Bad average config requested: %s\n", averageKey)
@@ -83,10 +83,11 @@ func ScheduleCalculation(re *redis.Client, ctx context.Context, sampleTime time.
 
 	key := fmt.Sprintf("%d/%s/%s/%s", calculationTime.Unix(), averageKey, deviceGuid, stream)
 
-	schedulation_time := time.Now().
-		//Truncate(average_config.Duration).
-		//Add(average_config.ScheduleTime).
-		Add(average_config.ScheduleTime)
+	schedulation_time := time.Now()
+
+	if !schedule_now {
+		schedulation_time = schedulation_time.Add(average_config.ScheduleTime)
+	}
 
 	phoenix.Logger.Infof("%s: now: %s:%s -> %s -> %s: %s\n",
 		averageKey,
