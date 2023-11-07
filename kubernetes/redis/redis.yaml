@@ -67,4 +67,8 @@ spec:
       name: redis-port
   selector:
     app: redis
-
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: redis

@@ -205,4 +205,8 @@ spec:
   selector:
     app: nsqlookupd
 
-
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: nsq

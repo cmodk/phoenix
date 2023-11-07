@@ -154,3 +154,8 @@ spec:
     port: 2020
     targetPort: 80
 
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: mariadb
