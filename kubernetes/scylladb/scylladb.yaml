@@ -7,7 +7,7 @@ metadata:
     app: scylladb
 spec:
   serviceName: scylladb
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: scylladb
@@ -25,7 +25,6 @@ spec:
                 operator: In
                 values:
                 - amd64
-                - arm64
       containers:
         - name: scylladb
           image: scylladb/scylla:5.2.9
