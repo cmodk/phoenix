@@ -27,7 +27,7 @@ spec:
                 - amd64
       containers:
         - name: scylladb
-          image: scylladb/scylla:5.2.9
+          image: scylladb/scylla:5.2.1
           imagePullPolicy: IfNotPresent
           args: ["--seeds", "scylladb-0.scylladb.scylladb.svc.cluster.local"]
           ports:
