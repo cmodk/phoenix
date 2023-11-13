@@ -97,6 +97,22 @@ func (d *Device) NotificationInsert(n *DeviceNotification) error {
 	return nil
 }
 
+func (d *Device) NotificationUpdateParameters(n *DeviceNotification) error {
+
+	query := d.ca.Query("UPDATE notifications SET parameters = ? WHERE device = ? AND timestamp = ? AND id = ?",
+		n.Parameters,
+		d.Guid,
+		n.Timestamp,
+		n.Id)
+
+	if err := query.Exec(); err != nil {
+		//Must not happen!
+		log.WithField("error", err).Error("Could not update device notification")
+		panic(err)
+	}
+
+	return nil
+}
 func (d *Device) NotificationList(c DeviceNotificationCriteria) ([]DeviceNotification, error) {
 
 	var notifications []DeviceNotification
@@ -125,6 +141,43 @@ func (d *Device) NotificationList(c DeviceNotificationCriteria) ([]DeviceNotific
 	iter.Close()
 
 	return notifications, nil
+}
+
+func (d *Device) NotificationGet(c DeviceNotificationCriteria) (*DeviceNotification, error) {
+
+	var notifications []DeviceNotification
+
+	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ? AND id = ?",
+		d.Guid,
+		c.Id)
+
+	log.Debugf("Executing cassandra query: %s\n", query.String())
+	iter := query.Iter()
+	for {
+		row := make(map[string]interface{})
+		if !iter.MapScan(row) {
+			break
+		}
+		notification := DeviceNotification{
+			Id:           uint64(row["id"].(int64)),
+			DeviceId:     d.Id,
+			Notification: row["notification"].(string),
+			Timestamp:    row["timestamp"].(time.Time),
+			Parameters:   json.RawMessage(row["parameters"].(string)),
+		}
+		notifications = append(notifications, notification)
+	}
+	iter.Close()
+
+	if len(notifications) == 0 {
+		return nil, fmt.Errorf("No notifications found with id %d\n", c.Id)
+	}
+
+	if len(notifications) > 1 {
+		return nil, fmt.Errorf("Multiple notifications found with id %d, count = %d", c.Id, len(notifications))
+	}
+
+	return &notifications[0], nil
 }
 
 func (d *Device) SampleList(c SampleCriteria) ([]Sample, error) {
@@ -342,9 +395,11 @@ type DeviceCriteria struct {
 }
 
 type DeviceNotificationCriteria struct {
-	From  time.Time `schema:"from"`
-	To    time.Time `schema:"to"`
-	Limit int       `schema:"limit"`
+	From time.Time `schema:"from"`
+	To   time.Time `schema:"to"`
+	Id   uint64    `schema:"id"`
+
+	Limit int `schema:"limit"`
 }
 
 type DeviceCommandCriteria struct {

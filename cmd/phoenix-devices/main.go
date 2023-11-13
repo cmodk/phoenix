@@ -55,6 +55,7 @@ func main() {
 	app.Post("/device/{device}/certificate", withParametricDevice(deviceCertificateRequestHandler))
 	app.Get("/device/{device}/notification", withParametricDevice(deviceNotificationListHandler))
 	app.Post("/device/{device}/notification", withParametricDevice(deviceNotificationPostHandler))
+	app.Post("/device/{device}/notification/{notification}/override_stream_value", withParametricDevice(deviceNotificationOverrideStreamValueHandler))
 	app.Get("/device/{device}/stream", withParametricDevice(deviceStreamListHandler))
 	app.Get("/device/{device}/stream/{stream}", withParametricDevice(withParametricStream(deviceStreamValueListHandler)))
 	app.Get("/device/{device}/sample", withParametricDevice(deviceSampleListHandler))
@@ -129,7 +130,13 @@ func deviceGetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func deviceNotificationListHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
-	ns, err := d.NotificationList(phoenix.DeviceNotificationCriteria{})
+
+	c := phoenix.DeviceNotificationCriteria{
+		From: time.Now().AddDate(0, 0, -1),
+		To:   time.Now(),
+	}
+
+	ns, err := d.NotificationList(c)
 	if err != nil {
 		app.HttpBadRequest(w, err)
 		return
@@ -208,6 +215,64 @@ func deviceNotificationPostHandler(w http.ResponseWriter, r *http.Request, d *ph
 			}
 		}
 	}
+
+}
+
+func deviceNotificationOverrideStreamValueHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
+
+	notification_id := mux.Vars(r)["notification"]
+
+	id, err := strconv.ParseUint(notification_id, 10, 64)
+	if err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	log.Printf("Searching for notification with id: %d\n", id)
+
+	c := phoenix.DeviceNotificationCriteria{
+		Id: id,
+	}
+
+	n, err := d.NotificationGet(c)
+	if err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	par := phoenix.StringMap{}
+
+	if err := json.Unmarshal(n.Parameters, &par); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	par["override_value"] = 123.4
+
+	n.Parameters, err = json.Marshal(par)
+	if err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	if err := d.NotificationUpdateParameters(n); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	//Rewrite parameters again and trigger an update of the value and averages
+
+	par["value"] = par["override_value"]
+	delete(par, "override_value")
+
+	n.Parameters, err = json.Marshal(par)
+	if err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+	app.Event.Publish(phoenix.DeviceNotificationCreated(*n))
+
+	app.JsonResponse(w, n)
 
 }
 
