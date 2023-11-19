@@ -138,9 +138,9 @@ func (d *Device) NotificationList(c DeviceNotificationCriteria) ([]DeviceNotific
 		}
 		notifications = append(notifications, notification)
 	}
-	iter.Close()
+	err := iter.Close()
 
-	return notifications, nil
+	return notifications, err
 }
 
 func (d *Device) NotificationGet(c DeviceNotificationCriteria) (*DeviceNotification, error) {
