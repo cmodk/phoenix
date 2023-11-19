@@ -160,8 +160,10 @@ func (d *Device) NotificationGet(c DeviceNotificationCriteria) (*DeviceNotificat
 
 	var notifications []DeviceNotification
 
-	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ? AND id = ?",
+	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ? AND timestamp >= ? AND timestamp <= ? AND id = ?",
 		d.Guid,
+		d.Created,
+		time.Now(),
 		c.Id)
 
 	log.Debugf("Executing cassandra query: %s\n", query.String())
