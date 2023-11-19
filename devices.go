@@ -158,12 +158,19 @@ func (d *Device) NotificationList(c DeviceNotificationCriteria) ([]DeviceNotific
 
 func (d *Device) NotificationGet(c DeviceNotificationCriteria) (*DeviceNotification, error) {
 
+	if c.Timestamp.IsZero() {
+		return nil, fmt.Errorf("Timestamp is required for getting a single notification")
+	}
+
+	if c.Id == 0 {
+		return nil, fmt.Errorf("Notification id is required for getting a single notification")
+	}
+
 	var notifications []DeviceNotification
 
-	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ? AND timestamp >= ? AND timestamp <= ? AND id = ? ALLOW FILTERING",
+	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ? AND timestamp = ? AND id = ?",
 		d.Guid,
-		d.Created,
-		time.Now(),
+		c.Timestamp,
 		c.Id)
 
 	log.Debugf("Executing cassandra query: %s\n", query.String())
@@ -413,10 +420,13 @@ type DeviceCriteria struct {
 }
 
 type DeviceNotificationCriteria struct {
-	From         time.Time `schema:"start"`
-	To           time.Time `schema:"end"`
-	Id           uint64    `schema:"id"`
+	From time.Time `schema:"start"`
+	To   time.Time `schema:"end"`
+	Id   uint64    `schema:"id"`
+
+	//Criteria for getting a single notification
 	Notification string    `schema:"notification"`
+	Timestamp    time.Time `schema:"timestamp"`
 
 	Limit int `schema:"limit"`
 }

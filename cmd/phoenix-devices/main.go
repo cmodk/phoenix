@@ -233,10 +233,40 @@ func deviceNotificationOverrideStreamValueHandler(w http.ResponseWriter, r *http
 		return
 	}
 
+	/*
+	 * 	Fetch override value and timestamp criteria
+	 * Cannot put the id in the json payload, as the json parser uses float64 as type
+	 */
+	override := phoenix.StringMap{}
+
+	if err := json.NewDecoder(r.Body).Decode(&override); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	time_string, ok := override["timestamp"]
+	if !ok {
+		app.HttpBadRequest(w, fmt.Errorf("Missing timestamp in body"))
+		return
+	}
+
+	timestamp, err := time.Parse(time.RFC3339, time_string.(string))
+	if err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	value, ok := override["override_value"]
+	if !ok {
+		app.HttpBadRequest(w, fmt.Errorf("Missing override value in body"))
+		return
+	}
+
 	log.Printf("Searching for notification with id: %d\n", id)
 
 	c := phoenix.DeviceNotificationCriteria{
-		Id: id,
+		Id:        id,
+		Timestamp: timestamp,
 	}
 
 	n, err := d.NotificationGet(c)
@@ -252,21 +282,6 @@ func deviceNotificationOverrideStreamValueHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	//Fetch override value
-	override := phoenix.StringMap{}
-
-	if err := json.NewDecoder(r.Body).Decode(&override); err != nil {
-		app.HttpBadRequest(w, err)
-		return
-	}
-
-	log.Printf("Override: %v\n", override)
-
-	value, ok := override["override_value"]
-	if !ok {
-		app.HttpBadRequest(w, fmt.Errorf("Missing override value in body"))
-		return
-	}
 	par["override_value"] = value
 
 	n.Parameters, err = json.Marshal(par)
