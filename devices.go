@@ -160,7 +160,7 @@ func (d *Device) NotificationGet(c DeviceNotificationCriteria) (*DeviceNotificat
 
 	var notifications []DeviceNotification
 
-	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ? AND timestamp >= ? AND timestamp <= ? AND id = ?",
+	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ? AND timestamp >= ? AND timestamp <= ? AND id = ? ALLOW FILTERING",
 		d.Guid,
 		d.Created,
 		time.Now(),
