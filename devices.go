@@ -117,12 +117,25 @@ func (d *Device) NotificationList(c DeviceNotificationCriteria) ([]DeviceNotific
 
 	var notifications []DeviceNotification
 
-	query := d.ca.Query("SELECT id,timestamp,notification,parameters FROM notifications WHERE device = ? AND timestamp >= ? AND timestamp <?",
-		d.Guid,
-		c.From,
-		c.To)
+	q := squirrel.Select("id,timestamp,notification,parameters").
+		From("notifications").
+		Where(squirrel.Eq{"device": d.Guid}).
+		Where(squirrel.Gt{"timestamp": c.From}).
+		Where(squirrel.Lt{"timestamp": c.To})
 
-	log.Debugf("Executing cassandra query: %s\n", query.String())
+	if len(c.Notification) > 0 {
+		q = q.Where(squirrel.Eq{"notification": c.Notification})
+
+	}
+
+	cql, args, err := q.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	query := d.ca.Query(cql, args...)
+	log.Debugf("Executed cassandra query: %s\n", query.String())
+
 	iter := query.Iter()
 	for {
 		row := make(map[string]interface{})
@@ -138,7 +151,7 @@ func (d *Device) NotificationList(c DeviceNotificationCriteria) ([]DeviceNotific
 		}
 		notifications = append(notifications, notification)
 	}
-	err := iter.Close()
+	err = iter.Close()
 
 	return notifications, err
 }
@@ -395,9 +408,10 @@ type DeviceCriteria struct {
 }
 
 type DeviceNotificationCriteria struct {
-	From time.Time `schema:"from"`
-	To   time.Time `schema:"to"`
-	Id   uint64    `schema:"id"`
+	From         time.Time `schema:"start"`
+	To           time.Time `schema:"end"`
+	Id           uint64    `schema:"id"`
+	Notification string    `schema:"notification"`
 
 	Limit int `schema:"limit"`
 }

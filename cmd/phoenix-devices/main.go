@@ -136,6 +136,11 @@ func deviceNotificationListHandler(w http.ResponseWriter, r *http.Request, d *ph
 		To:   time.Now(),
 	}
 
+	if err := schema.NewDecoder().Decode(&c, r.URL.Query()); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
 	ns, err := d.NotificationList(c)
 	if err != nil {
 		app.HttpBadRequest(w, err)
