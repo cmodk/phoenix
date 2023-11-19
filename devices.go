@@ -180,7 +180,10 @@ func (d *Device) NotificationGet(c DeviceNotificationCriteria) (*DeviceNotificat
 		}
 		notifications = append(notifications, notification)
 	}
-	iter.Close()
+	err := iter.Close()
+	if err != nil {
+		return nil, err
+	}
 
 	if len(notifications) == 0 {
 		return nil, fmt.Errorf("No notifications found with id %d\n", c.Id)
