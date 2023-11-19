@@ -252,7 +252,22 @@ func deviceNotificationOverrideStreamValueHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	par["override_value"] = 123.4
+	//Fetch override value
+	override := phoenix.StringMap{}
+
+	if err := json.NewDecoder(r.Body).Decode(&override); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	log.Printf("Override: %v\n", override)
+
+	value, ok := override["override_value"]
+	if !ok {
+		app.HttpBadRequest(w, fmt.Errorf("Missing override value in body"))
+		return
+	}
+	par["override_value"] = value
 
 	n.Parameters, err = json.Marshal(par)
 	if err != nil {
