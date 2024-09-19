@@ -45,9 +45,6 @@ spec:
             capabilities:
               add:
                 - IPC_LOCK
-            sysctls:
-            - name: fs.aio-max-nr
-              value: "262140"
           lifecycle:
             preStop:
               exec:
