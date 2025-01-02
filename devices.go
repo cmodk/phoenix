@@ -64,6 +64,7 @@ type Device struct {
 	Token           *string    `db:"token" json:"-"`
 	TokenExpiration *time.Time `db:"token_expiration" json:"token_expiration"`
 	Online          bool       `db:"online" json:"online"`
+	LowMemoryDevice bool       `db:"low_memory_device" json:"low_memory_device"`
 }
 
 func (d *Device) UpdateOnlineStatus(status bool) error {
@@ -448,6 +449,17 @@ func (d *Device) CommandInsert(command *DeviceCommand) error {
 	command.Pending = true
 
 	return d.db.Insert(command, "device_commands")
+}
+
+func (d *Device) CommandList(c DeviceCommandCriteria) ([]DeviceCommand, error) {
+	c.DeviceId = d.Id
+
+	var commands []DeviceCommand
+	if err := d.db.Match(&commands, "device_commands", c); err != nil {
+		return nil, err
+	}
+
+	return commands, nil
 }
 
 func (d *Device) CommandGet(c DeviceCommandCriteria) (*DeviceCommand, error) {

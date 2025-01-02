@@ -60,6 +60,7 @@ func main() {
 	app.Get("/device/{device}/stream/{stream}", withParametricDevice(withParametricStream(deviceStreamValueListHandler)))
 	app.Get("/device/{device}/sample", withParametricDevice(deviceSampleListHandler))
 	app.Post("/device/{device}/command", withParametricDevice(deviceCommandCreateHandler))
+	app.Get("/device/{device}/command", withParametricDevice(deviceCommandListHandler))
 	app.Get("/device/{device}/command/{command}", withParametricDevice(deviceCommandGetHandler))
 	app.HandleEvent(phoenix.DeviceOnline{}, deviceOnline)
 
@@ -204,17 +205,37 @@ func deviceNotificationPostHandler(w http.ResponseWriter, r *http.Request, d *ph
 		lg.WithField("Error", err).Errorf("Error fetching pending commands for device: %s", d.Guid)
 	}
 
-	resp := struct {
-		phoenix.DeviceNotification
-		PendingCommands []phoenix.DeviceCommand `json:"pending_commands"`
-	}{
-		n,
-		commands,
+	var resp interface{}
+
+	if d.LowMemoryDevice == false {
+		resp = struct {
+			phoenix.DeviceNotification
+			PendingCommands []phoenix.DeviceCommand `json:"pending_commands"`
+		}{
+			n,
+			commands,
+		}
+	} else {
+		//Only return pending commands for low memory device and in reduced format
+		data := struct {
+			PendingCommands []phoenix.DeviceLowMemoryPendingCommand
+		}{}
+
+		for _, cmd := range commands {
+			c := phoenix.DeviceLowMemoryPendingCommand{
+				cmd.Command,
+				cmd.Parameters,
+			}
+			data.PendingCommands = append(data.PendingCommands, c)
+		}
+
+		resp = data
+
 	}
 
 	if err := app.JsonResponse(w, resp); err == nil {
 		//Potential commands sent to device, mark them sent
-		for _, cmd := range resp.PendingCommands {
+		for _, cmd := range commands {
 			if err := d.CommandSent(&cmd); err != nil {
 				lg.WithField("Error", err).Errorf("Error marking command sent")
 			}
@@ -432,6 +453,22 @@ func deviceCommandCreateHandler(w http.ResponseWriter, r *http.Request, d *phoen
 	}
 
 	app.JsonResponse(w, command)
+}
+
+func deviceCommandListHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
+	var c phoenix.DeviceCommandCriteria
+	if err := schema.NewDecoder().Decode(&c, r.URL.Query()); err != nil {
+		app.HttpBadRequest(w, err)
+		return
+	}
+
+	commands, err := d.CommandList(c)
+	if err != nil {
+		app.HttpInternalError(w, err)
+		return
+	}
+
+	app.JsonResponse(w, commands)
 }
 
 func deviceCommandGetHandler(w http.ResponseWriter, r *http.Request, d *phoenix.Device) {
