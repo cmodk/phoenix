@@ -35,6 +35,7 @@ func updateLastKnownValue(event interface{}) error {
 
 		t := time.Time(lmStream.Timestamp)
 		stream.Id = lmStream.Id
+		stream.Code = lmStream.Code
 		stream.DeviceId = lmStream.DeviceId
 		stream.DeviceGuid = lmStream.DeviceGuid
 		stream.Timestamp = &t
@@ -75,7 +76,7 @@ func saveSample(event interface{}) error {
 
 	value, ok := e.Value.(float64)
 	if !ok {
-		app.Logger.WithField("stream", e).Debug("Cannot save string stream as sample")
+		app.Logger.WithField("stream", e).WithField("value", e.Value).Debug("Cannot save string stream as sample")
 		return nil
 	}
 
@@ -100,7 +101,10 @@ func saveSample(event interface{}) error {
 	}
 
 	if e.Code == "" {
-		return fmt.Errorf("Missing code in stream update")
+		app.Logger.WithField("stream", e).Errorf("Missing code in stream update")
+
+		//Cannot fix broken event, just return all good and let the bad event disappear
+		return nil
 	}
 
 	query := app.Cassandra.Query("INSERT INTO samples (device,stream,timestamp,value) VALUES(?,?,?,?)",

@@ -47,11 +47,11 @@ type StreamCriteria struct {
 type StreamTime time.Time
 
 func (t *StreamTime) UnmarshalJSON(b []byte) (err error) {
-	var epoch uint64
+	var epoch int64
 
-	if epoch, err = strconv.ParseUint(string(b), 64, 10); err != nil {
+	if epoch, err = strconv.ParseInt(string(b), 10, 64); err == nil {
 		//Timestamp was a unix time!
-		*t = StreamTime(time.Unix(int64(epoch), 0))
+		*t = StreamTime(time.Unix(epoch, 0))
 		return nil
 	}
 
