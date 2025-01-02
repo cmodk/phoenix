@@ -2,16 +2,23 @@ package phoenix
 
 import (
 	"encoding/json"
+	"strconv"
 	"time"
 )
 
 type Stream struct {
-	Id         uint64      `db:"id" json:"id,omitempty" table:"device_streams"`
-	DeviceId   uint64      `db:"device_id" json:"device_id,omitempty"`
-	DeviceGuid *string     `json:"device_guid,omitempty"`
-	Code       string      `db:"code" json:"code"`
-	Timestamp  *time.Time  `db:"timestamp" json:"timestamp,omitempty"`
-	Value      interface{} `db:"value" json:"value"`
+	Id         uint64  `db:"id" json:"id,omitempty" table:"device_streams"`
+	DeviceId   uint64  `db:"device_id" json:"device_id,omitempty"`
+	DeviceGuid *string `json:"device_guid,omitempty"`
+	Code       string  `db:"code" json:"code"`
+	//Timestamp  StreamTime  `db:"timestamp" json:"timestamp,omitempty"`
+	Timestamp *time.Time  `db:"timestamp" json:"timestamp,omitempty"`
+	Value     interface{} `db:"value" json:"value"`
+}
+
+type LowMemoryDeviceStream struct {
+	Stream
+	Timestamp StreamTime `db:"timestamp" json:"timestamp,omitempty"`
 }
 
 func (s *Stream) Notification() DeviceNotification {
@@ -35,4 +42,19 @@ type StreamCriteria struct {
 	Code     string `schema:"code" db:"code"`
 
 	Limit int `schema:"limit"`
+}
+
+type StreamTime time.Time
+
+func (t *StreamTime) UnmarshalJSON(b []byte) (err error) {
+	var epoch uint64
+
+	if epoch, err = strconv.ParseUint(string(b), 64, 10); err != nil {
+		//Timestamp was a unix time!
+		*t = StreamTime(time.Unix(int64(epoch), 0))
+		return nil
+	}
+
+	return nil
+
 }

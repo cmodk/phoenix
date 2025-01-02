@@ -24,9 +24,27 @@ func updateLastKnownValue(event interface{}) error {
 	}
 
 	var stream phoenix.Stream
-	if err := json.Unmarshal(e.Parameters, &stream); err != nil {
-		log.Printf("Ignoring bad timestamp for now: %v", err)
-		return nil
+
+	if d.LowMemoryDevice {
+		//Low memory devices sends streams with unix timestamp
+		var lmStream phoenix.LowMemoryDeviceStream
+		if err := json.Unmarshal(e.Parameters, &lmStream); err != nil {
+			log.Printf("Ignoring bad timestamp for now: %v", err)
+			return nil
+		}
+
+		t := time.Time(lmStream.Timestamp)
+		stream.Id = lmStream.Id
+		stream.DeviceId = lmStream.DeviceId
+		stream.DeviceGuid = lmStream.DeviceGuid
+		stream.Timestamp = &t
+		stream.Value = lmStream.Value
+
+	} else {
+		if err := json.Unmarshal(e.Parameters, &stream); err != nil {
+			log.Printf("Ignoring bad timestamp for now: %v", err)
+			return nil
+		}
 	}
 
 	if stream.Timestamp == nil || stream.Timestamp.IsZero() {
