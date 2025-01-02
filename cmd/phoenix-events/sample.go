@@ -34,6 +34,11 @@ func updateLastKnownValue(event interface{}) error {
 		}
 
 		t := time.Time(lmStream.Timestamp)
+		if t.Unix() == 0 {
+			//No timestamp from device. Use notification time
+			t = e.Timestamp
+		}
+
 		stream.Id = lmStream.Id
 		stream.Code = lmStream.Code
 		stream.DeviceId = lmStream.DeviceId
