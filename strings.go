@@ -9,7 +9,7 @@ func StringSave(event interface{}) error {
 
 	value, ok := e.Value.(string)
 	if !ok {
-		log.WithField("stream", e).Debug("Cannot save string string as sample")
+		//		log.WithField("stream", e).Debug("Cannot save string string as sample")
 		return nil
 	}
 
