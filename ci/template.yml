@@ -38,7 +38,7 @@ jobs:
       - name: github-key
       params:
         CONTEXT: source-code
-        IMAGE_PLATFORM: linux/amd64,linux/arm64
+        IMAGE_PLATFORM: linux/amd64
         PUSH: docker.io/cmodk/phoenix:((branch))
         DOCKER_USERNAME: ((docker.username))
         DOCKER_PASSWORD: ((docker.password))
