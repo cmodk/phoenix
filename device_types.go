@@ -23,3 +23,8 @@ type DeviceCommand struct {
 	Parameters *json.RawMessage `db:"parameters" json:"parameters"`
 	Response   *json.RawMessage `db:"response" json:"response"`
 }
+
+type DeviceLowMemoryPendingCommand struct {
+	Command    string      `json:"c"`
+	Parameters interface{} `json:"p"`
+}
