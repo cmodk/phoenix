@@ -504,8 +504,8 @@ func (d *Device) CommandsPending() ([]DeviceCommand, error) {
 	}
 
 	if d.LowMemoryDevice {
-		//Small devices only receive 10 commands at a time
-		c.Limit = 10
+		//Small devices only receive 5 commands at a time
+		c.Limit = 5
 	}
 
 	var commands []DeviceCommand
