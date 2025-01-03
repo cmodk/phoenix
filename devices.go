@@ -503,6 +503,11 @@ func (d *Device) CommandsPending() ([]DeviceCommand, error) {
 		Pending:  true,
 	}
 
+	if d.LowMemoryDevice {
+		//Small devices only receive 10 commands at a time
+		c.Limit = 10
+	}
+
 	var commands []DeviceCommand
 
 	if err := d.db.Match(&commands, "device_commands", c); err != nil {
