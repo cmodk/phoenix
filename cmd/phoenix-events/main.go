@@ -64,8 +64,28 @@ func splitBatchNotifications(event interface{}) error {
 
 	var streams []phoenix.Stream
 
-	if err := json.Unmarshal(e.Parameters, &streams); err != nil {
-		return err
+	if d.LowMemoryDevice {
+		//Low memory devices sends streams with unix timestamp
+		var lmStreams []phoenix.LowMemoryDeviceStream
+		if err := json.Unmarshal(e.Parameters, &lmStreams); err != nil {
+			return err
+		}
+
+		for _, lmStream := range lmStreams {
+
+			t := time.Time(lmStream.Timestamp)
+			if t.Unix() == 0 {
+				//No timestamp from device. Use notification time
+				t = e.Timestamp
+			}
+
+			streams = append(streams, lmStream.ToStream())
+		}
+
+	} else {
+		if err := json.Unmarshal(e.Parameters, &streams); err != nil {
+			return err
+		}
 	}
 
 	for _, s := range streams {

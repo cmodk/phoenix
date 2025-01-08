@@ -36,15 +36,10 @@ func updateLastKnownValue(event interface{}) error {
 		t := time.Time(lmStream.Timestamp)
 		if t.Unix() == 0 {
 			//No timestamp from device. Use notification time
-			t = e.Timestamp
+			lmStream.Timestamp = phoenix.StreamTime(e.Timestamp)
 		}
 
-		stream.Id = lmStream.Id
-		stream.Code = lmStream.Code
-		stream.DeviceId = lmStream.DeviceId
-		stream.DeviceGuid = lmStream.DeviceGuid
-		stream.Timestamp = &t
-		stream.Value = lmStream.Value
+		stream = lmStream.ToStream()
 
 	} else {
 		if err := json.Unmarshal(e.Parameters, &stream); err != nil {

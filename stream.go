@@ -58,3 +58,20 @@ func (t *StreamTime) UnmarshalJSON(b []byte) (err error) {
 	return nil
 
 }
+
+func (lmStream *LowMemoryDeviceStream) ToStream() Stream {
+
+	//Need a pointer for the timestamp
+	t := time.Time(lmStream.Timestamp)
+
+	var stream Stream
+
+	stream.Id = lmStream.Id
+	stream.Code = lmStream.Code
+	stream.DeviceId = lmStream.DeviceId
+	stream.DeviceGuid = lmStream.DeviceGuid
+	stream.Timestamp = &t
+	stream.Value = lmStream.Value
+
+	return stream
+}
