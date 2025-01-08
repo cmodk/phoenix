@@ -49,7 +49,7 @@ func updateLastKnownValue(event interface{}) error {
 	}
 
 	if stream.Timestamp == nil || stream.Timestamp.IsZero() {
-		log.Printf("Missing timestamp for stream, using notification time: %s\n", e.Timestamp.Format(time.RFC3339))
+		log.Warnf("Missing timestamp for stream, using notification time: %s\n", e.Timestamp.Format(time.RFC3339))
 		stream.Timestamp = &e.Timestamp
 	}
 
