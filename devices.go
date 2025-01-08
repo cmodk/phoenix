@@ -497,6 +497,19 @@ func (d *Device) CommandSent(cmd *DeviceCommand) error {
 }
 
 func (d *Device) CommandsPending() ([]DeviceCommand, error) {
+	//Remove expired commands
+	query, args, err := squirrel.Update("device_commands").Set("pending", false).Where(
+		squirrel.And{
+			squirrel.NotEq{"expiration_time": nil},
+			squirrel.Lt{"expiration_time": time.Now()},
+		}).ToSql()
+	if err != nil {
+		return []DeviceCommand{}, err
+	}
+
+	if _, err := d.db.Exec(query, args...); err != nil {
+		return []DeviceCommand{}, err
+	}
 
 	c := DeviceCommandCriteria{
 		DeviceId: d.Id,

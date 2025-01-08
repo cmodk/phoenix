@@ -13,5 +13,6 @@ var (
 		"ALTER TABLE `devices` ADD `token_expiration` TIMESTAMP NULL AFTER `token`;",
 		"ALTER TABLE `device_commands` ADD `response` BLOB NULL AFTER `pending`;",
 		"ALTER TABLE `devices` ADD `low_memory_device` BOOLEAN NOT NULL AFTER `online`;",
+		"ALTER TABLE `device_commands` ADD `expiration_time` TIMESTAMP NULL DEFAULT NULL AFTER `response`;",
 	}
 )
