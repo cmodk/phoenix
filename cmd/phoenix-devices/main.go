@@ -157,6 +157,7 @@ func deviceNotificationPostHandler(w http.ResponseWriter, r *http.Request, d *ph
 		return
 	}
 
+	//TODO: Check length of auth header to prevent application crash on only Bearer receive
 	auth_header := auth_headers[0]
 	bearer := auth_header[7:]
 
@@ -216,13 +217,14 @@ func deviceNotificationPostHandler(w http.ResponseWriter, r *http.Request, d *ph
 			commands,
 		}
 	} else {
-		//Only return pending commands for low memory device and in reduced format
+		//Only return pending commands for low memory device in reduced format
 		data := struct {
 			PendingCommands []phoenix.DeviceLowMemoryPendingCommand
 		}{}
 
 		for _, cmd := range commands {
 			c := phoenix.DeviceLowMemoryPendingCommand{
+				cmd.Id,
 				cmd.Command,
 				cmd.Parameters,
 			}

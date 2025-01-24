@@ -26,6 +26,7 @@ type DeviceCommand struct {
 }
 
 type DeviceLowMemoryPendingCommand struct {
+	Id         uint64      `json:"id""`
 	Command    string      `json:"c"`
 	Parameters interface{} `json:"p"`
 }
