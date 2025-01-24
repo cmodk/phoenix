@@ -144,7 +144,7 @@ func deviceCommandDone(event interface{}) error {
 	}
 
 	d, err := app.Devices.Get(phoenix.DeviceCriteria{
-		Id: e.Id,
+		Id: e.DeviceId,
 	})
 	if err != nil {
 		return err
