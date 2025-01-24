@@ -490,7 +490,7 @@ func (d *Device) CommandResponse(cmd *DeviceCommand, value interface{}) error {
 	return err
 }
 
-func (d *Device) CommandSent(cmd *DeviceCommand) error {
+func (d *Device) CommandDone(cmd *DeviceCommand) error {
 	_, err := d.db.Exec("UPDATE device_commands SET pending=0 WHERE device_id=? and id =?", d.Id, cmd.Id)
 
 	return err

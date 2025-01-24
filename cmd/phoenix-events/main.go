@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -31,6 +32,7 @@ func main() {
 	app.HandleEvent(phoenix.StreamUpdated{}, phoenix.StringSave)
 	app.HandleEvent(phoenix.StreamUpdated{}, pipeEvents)
 	app.HandleEvent(phoenix.DeviceNotificationCreated{}, pipeEvents)
+	app.HandleEvent(phoenix.DeviceNotificationCreated{}, deviceCommandDone)
 
 	go app.Command.Listen()
 	app.ListenEvents()
@@ -122,4 +124,32 @@ func splitBatchNotifications(event interface{}) error {
 	}
 
 	return nil
+}
+
+func deviceCommandDone(event interface{}) error {
+	e := event.(phoenix.DeviceNotificationCreated)
+
+	if e.Notification != "command_done" {
+		return nil
+	}
+
+	var cmd phoenix.DeviceCommand
+
+	if err := json.Unmarshal(e.Parameters, &cmd); err != nil {
+		return err
+	}
+
+	if cmd.Id == 0 {
+		return fmt.Errorf("Missing command id")
+	}
+
+	d, err := app.Devices.Get(phoenix.DeviceCriteria{
+		Id: e.Id,
+	})
+	if err != nil {
+		return err
+	}
+
+	return d.CommandDone(&cmd)
+
 }

@@ -233,14 +233,7 @@ func deviceNotificationPostHandler(w http.ResponseWriter, r *http.Request, d *ph
 
 	}
 
-	if err := app.JsonResponse(w, resp); err == nil {
-		//Potential commands sent to device, mark them sent
-		for _, cmd := range commands {
-			if err := d.CommandSent(&cmd); err != nil {
-				lg.WithField("Error", err).Errorf("Error marking command sent")
-			}
-		}
-	}
+	app.JsonResponse(w, resp)
 
 }
 
