@@ -23,7 +23,7 @@ spec:
         beta.kubernetes.io/arch: amd64
       containers:
         - name: nsqlookupd
-          image: eu.gcr.io/ae101-197818/nsq
+          image: nsqio/nsq
           command:
             - /nsqlookupd
           ports:
@@ -53,7 +53,7 @@ spec:
         beta.kubernetes.io/arch: amd64
       containers:
         - name: nsqd
-          image: eu.gcr.io/ae101-197818/nsq
+          image: nsqio/nsq
           command: 
             - "/nsqd"
             - "-http-address=0.0.0.0:32151"
@@ -118,7 +118,7 @@ spec:
         beta.kubernetes.io/arch: amd64
       containers:
         - name: nsqadmin
-          image: eu.gcr.io/ae101-197818/nsq
+          image: nsqio/nsq
           command: 
             - "/nsqadmin"
             - "-lookupd-http-address=nsqlookupd:4161"
