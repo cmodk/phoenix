@@ -45,7 +45,7 @@ func (commands *Commands) GetCommand(tag string) (*Command, error) {
 
 	}
 
-	return nil, fmt.Errorf("Unknown command tag: %s\n", tag)
+	return nil, fmt.Errorf("Unknown command tag: %s", tag)
 }
 
 type CommandPayload struct {
