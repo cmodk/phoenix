@@ -11,6 +11,7 @@ import (
 const (
 	CommandConfigRead = iota + 1
 	CommandConfigWrite
+	CommandStreamUpdate
 	CommandSystemReboot = 10000
 )
 
@@ -25,6 +26,7 @@ var (
 	deviceCommands = Commands{
 		{"config_write", commandConfigWrite},
 		{"config_read", commandConfigRead},
+		{"stream_update", commandConfigWrite},
 		{"reboot", commandReboot},
 	}
 )
