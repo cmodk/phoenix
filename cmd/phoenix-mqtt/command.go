@@ -129,6 +129,10 @@ func commandConfigWrite(parameters *ConfigurationParameter) (*CommandPayload, er
 		return nil, fmt.Errorf("Missing parameters")
 	}
 
+	if parameters.Configuration == nil {
+		return ni, fmt.Errorf("Missing Configuration in parameters")
+	}
+
 	conf := []byte(*parameters.Configuration)
 	conf_len := uint16(len(conf))
 
