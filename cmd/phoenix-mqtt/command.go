@@ -125,6 +125,10 @@ func deviceCommandCreated(event interface{}) error {
 
 func commandConfigWrite(parameters *ConfigurationParameter) (*CommandPayload, error) {
 
+	if parameters == nil {
+		return nil, fmt.Errorf("Missing parameters")
+	}
+
 	conf := []byte(*parameters.Configuration)
 	conf_len := uint16(len(conf))
 
