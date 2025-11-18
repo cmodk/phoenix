@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -29,7 +30,7 @@ func k8sDeleteAllPods() error {
 
 	podClient := clientset.CoreV1().Pods("phoenix-" + namespace_arg)
 
-	pods, err := podClient.List(metav1.ListOptions{})
+	pods, err := podClient.List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -38,7 +39,7 @@ func k8sDeleteAllPods() error {
 	for _, pod := range pods.Items {
 		log.Println(pod.Name)
 		deleteOptions := metav1.DeleteOptions{}
-		podClient.Delete(pod.Name, &deleteOptions)
+		podClient.Delete(context.TODO(), pod.Name, deleteOptions)
 	}
 
 	return nil
@@ -64,7 +65,7 @@ func k8sRecreatePods() error {
 
 	podClient := clientset.CoreV1().Pods(namespace_arg)
 
-	pods, err := podClient.List(metav1.ListOptions{})
+	pods, err := podClient.List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -74,7 +75,7 @@ func k8sRecreatePods() error {
 		if strings.HasPrefix(pod.Name, podname_arg) {
 			log.Println(pod.Name)
 			deleteOptions := metav1.DeleteOptions{}
-			podClient.Delete(pod.Name, &deleteOptions)
+			podClient.Delete(context.TODO(), pod.Name, deleteOptions)
 		}
 	}
 
