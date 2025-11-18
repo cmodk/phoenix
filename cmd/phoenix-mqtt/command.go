@@ -26,14 +26,14 @@ var (
 	deviceCommands = Commands{
 		{"config_write", commandConfigWrite},
 		{"config_read", commandConfigRead},
-		{"stream_update", commandConfigWrite},
+		{"stream_update", commandStreamUpdate},
 		{"reboot", commandReboot},
 	}
 )
 
 type Command struct {
 	Tag     string
-	Handler func(*ConfigurationParameter) (*CommandPayload, error)
+	Handler func(json.RawMessage) (*CommandPayload, error)
 }
 
 type Commands []Command
@@ -94,15 +94,7 @@ func deviceCommandCreated(event interface{}) error {
 		return err
 	}
 
-	var parameters *ConfigurationParameter
-	if e.Parameters != nil {
-		parameters, err = ParseConfigurationParameters(*e.Parameters)
-		if err != nil {
-			return err
-		}
-	}
-
-	payload, err := command.Handler(parameters)
+	payload, err := command.Handler(*e.Parameters)
 	if err != nil {
 		return err
 	}
@@ -123,10 +115,14 @@ func deviceCommandCreated(event interface{}) error {
 
 }
 
-func commandConfigWrite(parameters *ConfigurationParameter) (*CommandPayload, error) {
+func commandConfigWrite(par json.RawMessage) (*CommandPayload, error) {
 
-	if parameters == nil {
-		return nil, fmt.Errorf("Missing parameters")
+	if par != nil {
+		return nil, fmt.Errorf("Missing parameters for ConfigWrite")
+	}
+	parameters, err := ParseConfigurationParameters(par)
+	if err != nil {
+		return nil, err
 	}
 
 	if parameters.Configuration == nil {
@@ -166,7 +162,15 @@ func commandConfigWrite(parameters *ConfigurationParameter) (*CommandPayload, er
 
 }
 
-func commandConfigRead(parameters *ConfigurationParameter) (*CommandPayload, error) {
+func commandConfigRead(par json.RawMessage) (*CommandPayload, error) {
+
+	if par != nil {
+		return nil, fmt.Errorf("Missing parameters for ConfigWrite")
+	}
+	parameters, err := ParseConfigurationParameters(par)
+	if err != nil {
+		return nil, err
+	}
 
 	conf := []byte(*parameters.Configuration)
 	conf_len := uint16(len(conf))
@@ -200,7 +204,50 @@ func commandConfigRead(parameters *ConfigurationParameter) (*CommandPayload, err
 
 }
 
-func commandReboot(parameters *ConfigurationParameter) (*CommandPayload, error) {
+func commandStreamUpdate(parameters json.RawMessage) (*CommandPayload, error) {
+
+	if parameters == nil {
+		return nil, fmt.Errorf("Missing parameters for StreamUpdate")
+	}
+
+	var stream phoenix.Stream
+	if err := json.Unmarshal(parameters, &stream); err != nil {
+		return nil, err
+	}
+
+	if len(stream.Code) == 0 {
+		return nil, fmt.Errorf("Missing code for stream update")
+	}
+
+	if stream.Value == nil {
+		return nil, fmt.Errorf("Missing value for stream update")
+	}
+
+	conf := []byte(stream.Code)
+	conf_len := uint16(len(conf))
+
+	value, value_len, err := ValuePayload(stream.Value)
+	if err != nil {
+		return nil, err
+	}
+	payload := CommandPayload{}
+	payload.Tag = CommandStreamUpdate
+	payload.Length = uint16(5 + len(conf) + len(value))
+	payload.Payload = make([]byte, payload.Length)
+
+	payload.Payload[0] = uint8(conf_len >> 8)
+	payload.Payload[1] = uint8(conf_len & 0xff)
+	payload.Payload[2] = uint8(value_len >> 8)
+	payload.Payload[3] = uint8(value_len & 0xff)
+
+	payloadIndex := 4
+	copy(payload.Payload[payloadIndex:], conf)
+	copy(payload.Payload[payloadIndex+len(conf):], value)
+
+	return &payload, nil
+}
+
+func commandReboot(par json.RawMessage) (*CommandPayload, error) {
 	qos := 0
 	payload := CommandPayload{
 		Tag:    CommandSystemReboot,
@@ -228,22 +275,26 @@ func ParseConfigurationParameters(parameters json.RawMessage) (*ConfigurationPar
 }
 
 func (cp *ConfigurationParameter) ValuePayload() ([]byte, uint16, error) {
+	return ValuePayload(cp.Value)
+}
+
+func ValuePayload(value interface{}) ([]byte, uint16, error) {
 	//	value := []byte(cp.Value)
 	//	value_len := uint16(len(value))
 
-	var value []byte
-	var value_len uint16
+	var encoded_value []byte
+	var encoded_value_len uint16
 
-	switch t := cp.Value.(type) {
+	switch t := value.(type) {
 	case string:
-		value = []byte(t)
-		value_len = uint16(len(t))
+		encoded_value = []byte(t)
+		encoded_value_len = uint16(len(t))
 	case float64:
-		value = Float64Bytes(t)
-		value_len = 8
+		encoded_value = Float64Bytes(t)
+		encoded_value_len = 8
 	default:
 		return []byte{}, 0, fmt.Errorf("Unhandled configuration type: %s", reflect.TypeOf(t).String())
 	}
 
-	return value, value_len, nil
+	return encoded_value, encoded_value_len, nil
 }
