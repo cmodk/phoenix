@@ -130,7 +130,7 @@ func commandConfigWrite(parameters *ConfigurationParameter) (*CommandPayload, er
 	}
 
 	if parameters.Configuration == nil {
-		return ni, fmt.Errorf("Missing Configuration in parameters")
+		return nil, fmt.Errorf("Missing Configuration in parameters")
 	}
 
 	conf := []byte(*parameters.Configuration)
