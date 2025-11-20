@@ -14,5 +14,6 @@ var (
 		"ALTER TABLE `device_commands` ADD `response` BLOB NULL AFTER `pending`;",
 		"ALTER TABLE `devices` ADD `low_memory_device` BOOLEAN NOT NULL AFTER `online`;",
 		"ALTER TABLE `device_commands` ADD `expiration_time` TIMESTAMP NULL DEFAULT NULL AFTER `response`;",
+		"ALTER TABLE `phoenix`.`device_commands` ADD INDEX `device_command_expiration_time` (`expiration_time`);",
 	}
 )
