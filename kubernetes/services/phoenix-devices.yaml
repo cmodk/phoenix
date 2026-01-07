@@ -56,3 +56,18 @@ spec:
     port: 4010
     targetPort: 4010
     nodePort: 32080
+---
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: mariadb
+spec:
+  selector:
+    app: phoenix-devices
+  ports:
+  - name: phoenix-devices-internal
+    protocol: TCP
+    port: 4011
+    targetPort: 4010
+
+
