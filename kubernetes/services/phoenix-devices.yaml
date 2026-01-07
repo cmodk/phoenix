@@ -60,7 +60,7 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  namespace: mariadb
+  name: phoenix-devices-service-internal
 spec:
   selector:
     app: phoenix-devices
