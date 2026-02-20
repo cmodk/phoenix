@@ -29,7 +29,7 @@ spec:
         - name: scylladb
           image: scylladb/scylla:6.1.1
           imagePullPolicy: IfNotPresent
-          args: ["--seeds", "scylladb-0.scylladb.scylladb.svc.cluster.local"]
+          args: ["--seeds", "scylladb-0.scylladb.scylladb.svc.cluster.local", "--memory", "8G"]
           ports:
             - containerPort: 7000
               name: intra-node
