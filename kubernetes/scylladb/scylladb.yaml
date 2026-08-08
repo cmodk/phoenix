@@ -26,8 +26,9 @@ spec:
                 values:
                 - amd64
       securityContext:
-        runAsUser: 1000
+        runAsUser: 998
         runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: scylladb
           image: scylladb/scylla:2026.2.3
