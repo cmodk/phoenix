@@ -93,7 +93,7 @@ spec:
         storageClassName: scylladb-local-storage
         resources:
           requests:
-            storage: 100Gi
+            storage: 50Gi
 ---
 apiVersion: v1
 kind: ConfigMap
