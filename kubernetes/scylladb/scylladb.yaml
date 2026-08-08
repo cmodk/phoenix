@@ -70,7 +70,7 @@ spec:
               subPath: scylladb.yaml
               readOnly: true
             - name: scylladb-config
-              mountPath: "/etc/scylladb/cassandra-rackdc.properties"
+              mountPath: "/etc/scylla/cassandra-rackdc.properties"
               subPath: cassandra-rackdc.properties
               readOnly: true
             - name: scylladb-data
