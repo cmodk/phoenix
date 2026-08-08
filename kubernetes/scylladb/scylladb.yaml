@@ -31,7 +31,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: scylladb
-          image: scylladb/scylla:2026.2.3
+          image: scylladb/scylla:6.1.5
           imagePullPolicy: IfNotPresent
           args: ["--seeds", "scylladb-0.scylladb.scylladb.svc.cluster.local", "--memory", "8G", "--smp", "1"]
           ports:
