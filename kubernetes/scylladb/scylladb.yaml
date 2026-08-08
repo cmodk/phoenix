@@ -25,10 +25,6 @@ spec:
                 operator: In
                 values:
                 - amd64
-      securityContext:
-        runAsUser: 998
-        runAsGroup: 1000
-        fsGroup: 1000
       containers:
         - name: scylladb
           image: scylladb/scylla:6.1.5
