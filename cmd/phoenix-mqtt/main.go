@@ -164,7 +164,8 @@ func SampleHandler(s *mqtt.Server, msg mqtt.Message) error {
 		ms := int64(unix_time % 1000)
 
 		s := int64(unix_time / 1000)
-		tm = time.Unix(s, ms)
+
+		tm = time.Unix(s, ms*1e6)
 	} else {
 		tm = time.Now()
 	}
