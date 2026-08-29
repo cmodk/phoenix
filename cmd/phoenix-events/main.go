@@ -28,6 +28,7 @@ func main() {
 
 	app.HandleEvent(phoenix.DeviceNotificationCreated{}, updateLastKnownValue)
 	app.HandleEvent(phoenix.DeviceNotificationCreated{}, splitBatchNotifications)
+	app.HandleEvent(phoenix.DeviceNotificationCreated{}, splitStreamsNotifications)
 	app.HandleEvent(phoenix.StreamUpdated{}, saveSample)
 	app.HandleEvent(phoenix.StreamUpdated{}, phoenix.StringSave)
 	app.HandleEvent(phoenix.StreamUpdated{}, pipeEvents)
@@ -53,6 +54,50 @@ func pipeEvents(event interface{}) error {
 }
 
 func splitBatchNotifications(event interface{}) error {
+	e := event.(phoenix.DeviceNotificationCreated)
+
+	if e.Notification != "batch" {
+		return nil
+	}
+
+	d, err := app.Devices.Get(phoenix.DeviceCriteria{Id: e.DeviceId})
+	if err != nil {
+		return err
+	}
+
+	var notifications []phoenix.DeviceNotification
+
+        if err := json.Unmarshal(e.Parameters, &notifications); err != nil {
+            return err
+        }
+
+	for i, n := range notifications {
+		if n.Timestamp.IsZero() {
+                    log.WithField("notification", n).Errorf("Missing tiemstamp in notification from batch");
+		}
+		
+                
+                //Assign an id, which creates a connection to the batch
+                n.Id=n.Id+uint64(i);
+
+		cmd := phoenix.DeviceNotificationCreate{
+			Id:           n.Id,
+			DeviceGuid:   d.Guid,
+			Notification: n.Notification,
+			Timestamp:    n.Timestamp,
+			Parameters:   n.Parameters,
+		}
+
+		if err := app.Command.Create(cmd); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+func splitStreamsNotifications(event interface{}) error {
 	e := event.(phoenix.DeviceNotificationCreated)
 
 	if e.Notification != "streams" {
