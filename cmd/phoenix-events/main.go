@@ -78,7 +78,7 @@ func splitBatchNotifications(event interface{}) error {
 		
                 
                 //Assign an id, which creates a connection to the batch
-                n.Id=n.Id+uint64(i);
+                n.Id=e.Id+uint64(i);
 
 		cmd := phoenix.DeviceNotificationCreate{
 			Id:           n.Id,
